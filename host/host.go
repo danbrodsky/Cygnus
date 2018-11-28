@@ -1,27 +1,29 @@
 package host
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"math"
 	"net"
 	"net/http"
 	"net/rpc"
+	"os"
 	"sync"
 	"time"
 )
-
-//Things that we could either hardcode or accept as arguments
-const clientPort = "5000" 	//Port that clients will connect to
-const hostPort = "5001" 	//Port that hosts will connect using RPC
-const hostUDP = "5002"		//Port that hosts will send upd messages
 
 //Public IP, private IP and location of the host
 var publicIp string
 var privateIp string
 var location Location
 
+var clientPort string  //Port that clients will connect to
+var hostPortRPC string //Port that hosts will connect using RPC
+var hostPortUDP string //Port that hosts will send upd messages
+
 //Peer ip addresses
-var peers = make(map[string] *rpc.Client)
+var peers = make(map[string]bool)
 var peerLock = sync.Mutex{}
 
 //Client address. An empty string if there is no client
@@ -29,8 +31,20 @@ var client string
 var clientLock = sync.Mutex{}
 
 //Seen host requests (prevent endless looping during flooding)
-var seenHostRequests = make(map[HostRequest] bool)
+var seenHostRequests = make(map[HostRequest]bool)
 var seenHostRequestsLock = sync.Mutex{}
+
+type Parameters struct {
+	HostLatitude      float64  `json:"HostLatitude"`
+	HostLongitude     float64  `json:"HostLongitude"`
+	HostID            string   `json:"HostID"`
+	PeerHosts         []string `json:"PeerHosts"`
+	HostPublicIP      string   `json:"HostPublicIP"`
+	HostPrivateIP     string   `json:"HostPrivateIP"`
+	AcceptClientsPort string   `json:"AcceptClientsPort"`
+	HostsPortRPC      string   `json:"HostsPortRPC"`
+	HostsPortUDP      string   `json:"HostsPortUDP"`
+}
 
 type Message struct{}
 
@@ -54,9 +68,9 @@ func (t *Message) ReceiveHostRequest(args HostRequestWithSender, reply *int) err
 		clientLock.Unlock()
 
 		sendResponse := func() {
-			hostRequest.BestHost = publicIp
+			hostRequest.BestHost = concatIp(publicIp, clientPort)
 			hostRequest.BestHostLocation = location
-			conn, err := net.Dial("udp", concatIp(hostRequest.RequestingHost, hostUDP))
+			conn, err := net.Dial("udp", hostRequest.RequestingHost)
 			if err == nil {
 				b, err := marshallHostRequest(hostRequest)
 				if err == nil {
@@ -85,11 +99,27 @@ func (t *Message) ReceiveHostRequest(args HostRequestWithSender, reply *int) err
 	return nil
 }
 
-func Initialize() {
-	//TODO: Get list of peers & call addPeer for each of them
-	//TODO: Get public IP
-	//TODO: Get private IP
+func Initialize(paramsPath string) {
+	var params Parameters
+	jsonFile, err := os.Open(paramsPath)
+	if err != nil {
+		log.Println(err)
+	}
+	defer jsonFile.Close()
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(byteValue, &params)
+	log.Println(params)
 
+	publicIp = params.HostPublicIP
+	privateIp = params.HostPrivateIP
+	location = Location{Latitude: params.HostLatitude, Longitude: params.HostLongitude}
+	hostPortRPC = params.HostsPortRPC
+	hostPortUDP = params.HostsPortUDP
+	clientPort = params.AcceptClientsPort
+
+	for _, peer := range params.PeerHosts {
+		addPeer(peer)
+	}
 	setUpMessageRPC()
 	notifyPeers()
 }
@@ -99,7 +129,7 @@ func setUpMessageRPC() {
 	msg := new(Message)
 	rpc.Register(msg)
 	rpc.HandleHTTP()
-	l, e := net.Listen("tcp", concatIp(privateIp, hostPort))
+	l, e := net.Listen("tcp", concatIp(privateIp, hostPortRPC))
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
@@ -110,9 +140,13 @@ func setUpMessageRPC() {
 func notifyPeers() {
 	peerLock.Lock()
 	defer peerLock.Unlock()
-	for _, peer := range peers {
+	for peer := range peers {
 		var reply int
-		peer.Go("Message.RpcAddPeer", publicIp, reply, nil)
+		client, err := rpc.DialHTTP("tcp", peer)
+		if err != nil {
+			log.Println(err)
+		}
+		client.Go("Message.RpcAddPeer", concatIp(publicIp, hostPortRPC), reply, nil)
 	}
 }
 
@@ -120,34 +154,35 @@ func notifyPeers() {
 func addPeer(ip string) {
 	peerLock.Lock()
 	defer peerLock.Unlock()
-	_, ok := peers[ip]
-	if !ok {
-		client, err := rpc.DialHTTP("tcp", concatIp(ip, hostPort))
-		if err == nil {
-			peers[ip] = client
-		}
-	}
+	peers[ip] = true
 }
 
 //Send the host request to all peers
 func floodHostRequest(sender string, hostRequest HostRequest) {
 	peerLock.Lock()
 	defer peerLock.Unlock()
-	for peer, con := range peers {
+	for peer := range peers {
 		if peer != sender {
 			var reply int
-			con.Go("Message.ReceiveHostRequest", hostRequest, reply, nil)
+			hostRequestWithSender := HostRequestWithSender{
+				Sender: concatIp(publicIp, hostPortRPC),
+				Request: hostRequest}
+			client, err := rpc.DialHTTP("tcp", peer)
+			if err != nil {
+				log.Println(err)
+			}
+			client.Go("Message.ReceiveHostRequest", hostRequestWithSender, reply, nil)
 		}
 	}
 }
 
 //Will either return the ip of the best host, or an empty string if there are no hosts
-func findHostForClient(clientLocation Location) string {
+func FindHostForClient(clientLocation Location) string {
 	hostRequest := HostRequest{
 		ClientLocation: clientLocation,
-		RequestingHost: publicIp}
-	floodHostRequest(publicIp, hostRequest)
-	return waitForBestHost(concatIp(privateIp, hostUDP), clientLocation)
+		RequestingHost: concatIp(publicIp, hostPortUDP)}
+	floodHostRequest(concatIp(publicIp, hostPortRPC), hostRequest)
+	return waitForBestHost(concatIp(privateIp, hostPortUDP), clientLocation)
 }
 
 //Wait for hosts to respond. Then choose the best host
@@ -159,7 +194,7 @@ func waitForBestHost(addr string, clientLocation Location) string {
 	//If this host has no clients, add the host as the best host
 	clientLock.Lock()
 	if client == "" {
-		bestHost = publicIp
+		bestHost = concatIp(publicIp, clientPort)
 		bestHostLocation = location
 		currentBestDistance = distance(clientLocation, location)
 	}
@@ -177,7 +212,7 @@ func waitForBestHost(addr string, clientLocation Location) string {
 	defer l.Close()
 
 	//Only wait for one second
-	timeoutTime := time.Now().Add(time.Second * 1)
+	timeoutTime := time.Now().Add(time.Second * 3)
 	l.SetReadDeadline(timeoutTime)
 
 	for time.Now().Before(timeoutTime) {
@@ -186,7 +221,6 @@ func waitForBestHost(addr string, clientLocation Location) string {
 		if err == nil {
 			hostRequest, err := unMarshallHostRequest(buffer, n)
 			if err == nil {
-
 				//If there is currently no best host, set the received host as the best host
 				if bestHostLocation == (Location{}) && hostRequest.BestHost != "" {
 					bestHost = hostRequest.BestHost
@@ -204,6 +238,7 @@ func waitForBestHost(addr string, clientLocation Location) string {
 			}
 		}
 	}
+	log.Println(bestHostLocation)
 	return bestHost
 }
 
@@ -214,7 +249,7 @@ func distance(location1 Location, location2 Location) float64 {
 	diffLat := toRadians(location2.Latitude - location1.Latitude)
 	diffLong := toRadians(location2.Longitude - location1.Longitude)
 
-	var a = math.Sin(diffLat/2) * math.Sin(diffLat/2) + math.Cos(radiansLat1) * math.Cos(radiansLat2) * math.Sin(diffLong/2) * math.Sin(diffLong/2)
+	var a = math.Sin(diffLat/2)*math.Sin(diffLat/2) + math.Cos(radiansLat1)*math.Cos(radiansLat2)*math.Sin(diffLong/2)*math.Sin(diffLong/2)
 	return 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
 }
 
