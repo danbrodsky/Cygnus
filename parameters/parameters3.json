@@ -1,8 +1,8 @@
 {
-  "HostLatitude" : 37.090252,
-  "HostLongitude" : -95.712868,
-  "HostID" : "host3",
-  "PeerHosts" : ["127.0.0.1:6001"],
+  "HostLatitude" : 51.507351,
+  "HostLongitude" : -0.127758,
+  "HostID" : "Host_London",
+  "PeerHosts" : ["127.0.0.1:5001", "127.0.0.1:6001"],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
   "AcceptClientsPort": "7000",

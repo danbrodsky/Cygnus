@@ -1,0 +1,11 @@
+{
+  "HostLatitude" : 39.904202,
+  "HostLongitude" : 116.407394,
+  "HostID" : "Host_Beijing",
+  "PeerHosts" : ["127.0.0.1:7001"],
+  "HostPublicIP" : "127.0.0.1",
+  "HostPrivateIP" : "127.0.0.1",
+  "AcceptClientsPort": "8000",
+  "HostsPortRPC": "8001",
+  "HostsPortUDP": "8002"
+}

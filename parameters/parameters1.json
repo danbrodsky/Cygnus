@@ -1,7 +1,7 @@
 {
   "HostLatitude" : 49.282730,
   "HostLongitude" : -123.120735,
-  "HostID" : "host1",
+  "HostID" : "Host_Vancouver",
   "PeerHosts" : [],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
