@@ -1,0 +1,10 @@
+Host_Seattle {"Host_Seattle":1}
+Initialization Complete
+Host_Seattle {"Host_Seattle":2}
+Making RPC call
+Host_Seattle {"Host_Seattle":3}
+Received RPC Call response from server
+Host_Seattle {"Host_Seattle":4, "HBeijing":10, "HOsaka":4}
+Received RPC request
+Host_Seattle {"HOsaka":4, "Host_Seattle":5, "HBeijing":10}
+Sending response to RPC request

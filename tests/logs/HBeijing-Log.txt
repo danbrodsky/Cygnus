@@ -8,11 +8,19 @@ HBeijing {"HBeijing":4, "HOsaka":2}
 Received RPC request
 HBeijing {"HBeijing":5, "HOsaka":2}
 Sending response to RPC request
-HBeijing {"HBeijing":6, "HOsaka":3}
+HBeijing {"HBeijing":6, "HOsaka":2, "Host_Seattle":2}
 Received RPC request
-HBeijing {"HBeijing":7, "HOsaka":3}
-Making RPC call
-HBeijing {"HBeijing":8, "HOsaka":3}
+HBeijing {"Host_Seattle":2, "HBeijing":7, "HOsaka":2}
 Sending response to RPC request
-HBeijing {"HOsaka":3, "HBeijing":9}
+HBeijing {"HBeijing":8, "HOsaka":4, "Host_Seattle":2}
+Received RPC request
+HBeijing {"HBeijing":9, "HOsaka":4, "Host_Seattle":2}
+Making RPC call
+HBeijing {"HBeijing":10, "HOsaka":4, "Host_Seattle":2}
+Making RPC call
+HBeijing {"HBeijing":11, "HOsaka":4, "Host_Seattle":2}
+Sending response to RPC request
+HBeijing {"HBeijing":12, "HOsaka":4, "Host_Seattle":2}
+Received RPC Call response from server
+HBeijing {"Host_Seattle":2, "HBeijing":13, "HOsaka":4}
 Received RPC Call response from server

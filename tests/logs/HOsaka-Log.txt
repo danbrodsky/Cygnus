@@ -3,9 +3,9 @@ Initialization Complete
 HOsaka {"HOsaka":2}
 Making RPC call
 HOsaka {"HOsaka":3}
-Making RPC call
-HOsaka {"HOsaka":4}
 Received RPC Call response from server
+HOsaka {"HOsaka":4}
+Making RPC call
 HOsaka {"HOsaka":5}
 INFO: Location info from:127.0.0.1:9002
 HOsaka {"HOsaka":6}
@@ -13,4 +13,6 @@ Received RPC Call response from server
 HOsaka {"HOsaka":7}
 INFO: Location info from:127.0.0.1:9002
 HOsaka {"HOsaka":8}
+INFO: Location info from:127.0.0.1:9002
+HOsaka {"HOsaka":9}
 INFO: Location info from:127.0.0.1:9002
