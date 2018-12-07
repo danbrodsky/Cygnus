@@ -251,7 +251,8 @@ func (h *Host) FindHostForClient(clientAddr string, clientLocation Location) str
 	h.floodHostRequest(h.publicAddrRPC, hostRequest)
 	bestHost := h.waitForBestHost(h.privateAddrUDP, clientLocation, seqNum)
 
-	//TODO: do consensus before we send the best client-host pair to everyone
+	//TODO: Check that there actually is a best host (bestHost != "")
+	//TODO: Do consensus before we send the best client-host pair to everyone
 
 	//Flood the best client-host pairing
 	h.sendHostClientPair(clientAddr, bestHost)
