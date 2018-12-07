@@ -1,0 +1,11 @@
+{
+  "HostLatitude" : 44.282730,
+  "HostLongitude" : -120.120735,
+  "HostID" : "host5",
+  "PeerHosts" : [],
+  "HostPublicIP" : "127.0.0.1",
+  "HostPrivateIP" : "127.0.0.1",
+  "AcceptClientsPort": "9000",
+  "HostsPortRPC": "9090",
+  "HostsPortUDP": "9091"
+}

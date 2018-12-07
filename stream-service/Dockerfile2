@@ -1,0 +1,24 @@
+From ubuntu:16.04
+
+ADD ./azureinstall.sh /
+
+RUN  apt-get update \
+  && apt-get install -y wget \
+  && rm -rf /var/lib/apt/lists/* \
+  && apt-get update \
+  && apt-get -y install sudo 
+
+RUN ./azureinstall.sh
+
+RUN apt-get install -y vim
+RUN apt-get install -y git
+
+ADD /go /root/go
+ADD main.go /root/main.go
+ADD /parameters /parameters
+
+EXPOSE 6060
+
+WORKDIR root/
+CMD go run main.go /parameters/parameters2.json
+#CMD tail -f /dev/null

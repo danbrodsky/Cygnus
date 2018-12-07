@@ -1,0 +1,11 @@
+{
+  "HostLatitude" : 42.282730,
+  "HostLongitude" : -124.120735,
+  "HostID" : "host4",
+  "PeerHosts" : ["127.0.0.1:9090"],
+  "HostPublicIP" : "127.0.0.1",
+  "HostPrivateIP" : "127.0.0.1",
+  "AcceptClientsPort": "8000",
+  "HostsPortRPC": "8080",
+  "HostsPortUDP": "8081"
+}

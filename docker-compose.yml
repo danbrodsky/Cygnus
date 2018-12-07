@@ -1,0 +1,71 @@
+version: '3.4'
+services:
+  stream-service1:
+    build:
+      context: ./stream-service
+      dockerfile: Dockerfile1
+    network_mode: "host" 
+    ports:
+      - "5050:5050"
+      - "5051:5051"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - GOPATH=/root/go
+      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/root/go/bin:/root/go/bin
+
+  stream-service2:
+    build:
+      context: ./stream-service
+      dockerfile: Dockerfile2
+    network_mode: "host"
+    ports:
+      - "6060:6060"
+      - "6061:6061"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - GOPATH=/root/go
+      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/root/go/bin:/root/go/bin
+
+  stream-service3:
+    build:
+      context: ./stream-service
+      dockerfile: Dockerfile3
+    network_mode: "host"
+    ports:
+      - "7070:7070"
+      - "7071:7071"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - GOPATH=/root/go
+      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/root/go/bin:/root/go/bin
+
+  stream-service4:
+    build:
+      context: ./stream-service
+      dockerfile: Dockerfile4
+    network_mode: "host"
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - GOPATH=/root/go
+      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/root/go/bin:/root/go/bin
+
+  stream-service5:
+    build:
+      context: ./stream-service
+      dockerfile: Dockerfile5
+    network_mode: "host"
+    ports:
+      - "9090:9090"
+      - "9091:9091"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - GOPATH=/root/go
+      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/root/go/bin:/root/go/bin
