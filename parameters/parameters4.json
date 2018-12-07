@@ -1,7 +1,7 @@
 {
   "HostLatitude" : 39.904202,
   "HostLongitude" : 116.407394,
-  "HostID" : "Host_Beijing",
+  "HostID" : "HBeijing",
   "PeerHosts" : ["127.0.0.1:7001"],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",

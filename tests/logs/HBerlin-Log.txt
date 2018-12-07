@@ -1,0 +1,10 @@
+HBerlin {"HBerlin":1}
+Initialization Complete
+HBerlin {"HBerlin":2, "HLondon":3}
+Received RPC request
+HBerlin {"HBerlin":3, "HLondon":3}
+Sending response to RPC request
+HBerlin {"HBerlin":4, "HLondon":10, "HBeijing":7, "HOsaka":3}
+Received RPC request
+HBerlin {"HBeijing":7, "HOsaka":3, "HBerlin":5, "HLondon":10}
+Sending response to RPC request

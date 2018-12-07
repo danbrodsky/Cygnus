@@ -9,7 +9,7 @@ func TestFlooding(t *testing.T) {
 	host.Initialize("../parameters/parameters1.json") //Vancouver
 	host.Initialize("../parameters/parameters2.json") //Berlin
 	host.Initialize("../parameters/parameters3.json") //London
-	host4 := host.Initialize("../parameters/parameters4.json") //Beijing
+	host.Initialize("../parameters/parameters4.json") //Beijing
 	host5 := host.Initialize("../parameters/parameters5.json") //Osaka
 
 	//Client is in Richmond, BC. Should be closes to the host in Vancouver
@@ -20,6 +20,7 @@ func TestFlooding(t *testing.T) {
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
+	/*
 	host5.FindHostForClient(clientLocation, &foundHost)
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
@@ -32,4 +33,12 @@ func TestFlooding(t *testing.T) {
 	if foundHost != expectedHost2 {
 		t.Errorf("Expected %s, got %s", expectedHost2, foundHost)
 	}
+
+	host4.FindHostForClient(clientLocation2, &foundHost)
+        if foundHost != expectedHost2 {
+                t.Errorf("Expected %s, got %s", expectedHost2, foundHost)
+        }
+	*/
+
+
 }

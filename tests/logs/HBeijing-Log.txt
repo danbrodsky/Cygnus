@@ -1,0 +1,18 @@
+HBeijing {"HBeijing":1}
+Initialization Complete
+HBeijing {"HBeijing":2}
+Making RPC call
+HBeijing {"HBeijing":3}
+Received RPC Call response from server
+HBeijing {"HBeijing":4, "HOsaka":2}
+Received RPC request
+HBeijing {"HBeijing":5, "HOsaka":3}
+Received RPC request
+HBeijing {"HOsaka":3, "HBeijing":6}
+Sending response to RPC request
+HBeijing {"HBeijing":7, "HOsaka":3}
+Making RPC call
+HBeijing {"HBeijing":8, "HOsaka":3}
+Sending response to RPC request
+HBeijing {"HOsaka":3, "HBeijing":9}
+Received RPC Call response from server

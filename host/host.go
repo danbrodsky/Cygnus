@@ -10,6 +10,8 @@ import (
 	"os"
 	"sync"
 	"time"
+	"github.com/DistributedClocks/GoVector/govec"
+	"github.com/DistributedClocks/GoVector/govec/vrpc"
 )
 
 type Host struct {
@@ -43,6 +45,8 @@ type Host struct {
 	//Sequence number for host requests being flooded
 	currSeqNumber uint64
 	seqNumberLock sync.Mutex
+
+	govecLogger *govec.GoLog
 }
 
 type HostInterface interface {
@@ -67,6 +71,10 @@ type Parameters struct {
 	HostsPortRPC      string   `json:"HostsPortRPC"`
 	HostsPortUDP      string   `json:"HostsPortUDP"`
 }
+
+var(
+	GovecOptions = govec.GetDefaultLogOptions()
+)
 
 //Add peer to the peer list
 func (h *Host) RpcAddPeer(ip string, reply *int) error {
@@ -127,14 +135,15 @@ func (h *Host) setUpMessageRPC() {
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
-	go func() {
+	go vrpc.ServeRPCConn(handler, l, h.govecLogger, GovecOptions)
+	/*go func() {
 		for {
 			con, e := l.Accept()
 			if e == nil {
 				go handler.ServeConn(con)
 			}
 		}
-	}()
+	}()*/
 }
 
 //Notify peers that this host has joined
@@ -143,7 +152,7 @@ func (h *Host) notifyPeers() {
 	defer h.peerLock.Unlock()
 	for peer := range h.peers {
 		var reply int
-		client, err := rpc.Dial("tcp", peer)
+		client, err := vrpc.RPCDial("tcp", peer, h.govecLogger, GovecOptions)
 		if err != nil {
 			log.Println(err)
 		}
@@ -168,7 +177,7 @@ func (h *Host) floodHostRequest(sender string, hostRequest HostRequest) {
 			hostRequestWithSender := HostRequestWithSender{
 				Sender: h.publicAddrRPC,
 				Request: hostRequest}
-			client, err := rpc.Dial("tcp", peer)
+			client, err := vrpc.RPCDial("tcp", peer, h.govecLogger, GovecOptions)
 			if err != nil {
 				log.Println(err)
 			}
@@ -220,7 +229,7 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location) string {
 	}
 	defer l.Close()
 
-	//Only wait for one second
+	//Only wait for three second
 	timeoutTime := time.Now().Add(time.Second * 3)
 	l.SetReadDeadline(timeoutTime)
 
@@ -229,6 +238,8 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location) string {
 		n, _, err := l.ReadFromUDP(buffer)
 		if err == nil {
 			hostRequest, err := unMarshallHostRequest(buffer, n)
+			log.Println(hostRequest)
+			h.govecLogger.LogLocalEvent(": Location info from:" + hostRequest.RequestingHost, GovecOptions)
 			if err == nil {
 				//If there is currently no best host, set the received host as the best host
 				if bestHostLocation == (Location{}) && hostRequest.BestHost != "" {
@@ -269,6 +280,10 @@ func concatIp(ip string, port string) string {
 	return ip + ":" + port
 }
 
+func handleVerificationRequests(verificationAddrPort string){
+	//Wait for other hosts to send verification requests for client on the udp connection
+}
+
 func Initialize(paramsPath string) (*Host) {
 	var params Parameters
 	jsonFile, err := os.Open(paramsPath)
@@ -288,6 +303,8 @@ func Initialize(paramsPath string) (*Host) {
 	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
 	h.location = Location{Latitude: params.HostLatitude, Longitude: params.HostLongitude}
+
+	h.govecLogger = govec.InitGoVector(params.HostID, "./logs/" + params.HostID, govec.GetDefaultConfig())
 
 	h.peers = make(map[string]bool)
 	h.peerLock = sync.Mutex{}

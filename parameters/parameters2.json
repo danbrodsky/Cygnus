@@ -1,7 +1,7 @@
 {
   "HostLatitude" : 52.520008,
   "HostLongitude" : 13.404954,
-  "HostID" : "Host_Berlin",
+  "HostID" : "HBerlin",
   "PeerHosts" : [],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",

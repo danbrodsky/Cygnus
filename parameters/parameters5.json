@@ -1,7 +1,7 @@
 {
   "HostLatitude" : 34.693737,
   "HostLongitude" : 135.502167,
-  "HostID" : "Host_Osaka",
+  "HostID" : "HOsaka",
   "PeerHosts" : ["127.0.0.1:8001"],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
