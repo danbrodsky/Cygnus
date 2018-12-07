@@ -6,5 +6,5 @@ HBerlin {"HBerlin":3, "HLondon":3}
 Sending response to RPC request
 HBerlin {"HBerlin":4, "HLondon":10, "HBeijing":7, "HOsaka":3}
 Received RPC request
-HBerlin {"HBeijing":7, "HOsaka":3, "HBerlin":5, "HLondon":10}
+HBerlin {"HBerlin":5, "HLondon":10, "HBeijing":7, "HOsaka":3}
 Sending response to RPC request
