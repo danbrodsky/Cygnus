@@ -18,6 +18,12 @@ type HostRequest struct {
 	BestHost			string
 }
 
+type HostClientPair struct {
+	SequenceNumber		uint64
+	Client				string
+	Host				string
+}
+
 type Location struct {
 	Latitude  float64
 	Longitude float64
