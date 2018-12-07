@@ -20,6 +20,10 @@ func TestFlooding(t *testing.T) {
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
+	host5.FindHostForClient(clientLocation, &foundHost)
+	if foundHost != expectedHost {
+		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
+	}
 
 	//Client is in Tokyo. Should be closes to the host in Osaka
 	clientLocation2 := host.Location{Latitude: 35.689487, Longitude: 139.691711}

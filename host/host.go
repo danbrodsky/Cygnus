@@ -39,6 +39,10 @@ type Host struct {
 	//Seen host requests (prevent endless looping during flooding)
 	seenHostRequests     map[HostRequest]bool
 	seenHostRequestsLock sync.Mutex
+
+	//Sequence number for host requests being flooded
+	currSeqNumber uint64
+	seqNumberLock sync.Mutex
 }
 
 type HostInterface interface {
@@ -176,7 +180,13 @@ func (h *Host) floodHostRequest(sender string, hostRequest HostRequest) {
 //TODO: Probably need to change this function declaration, depending on what we decided to do
 //Will either return the ip of the best host, or an empty string if there are no hosts
 func (h *Host) FindHostForClient(clientLocation Location, reply *string) error {
+	h.seqNumberLock.Lock()
+	seqNum := h.currSeqNumber
+	h.currSeqNumber++
+	h.seqNumberLock.Unlock()
+
 	hostRequest := HostRequest{
+		SequenceNumber: seqNum,
 		ClientLocation: clientLocation,
 		RequestingHost: h.publicAddrUDP}
 	h.floodHostRequest(h.publicAddrRPC, hostRequest)
@@ -273,23 +283,21 @@ func Initialize(paramsPath string) (*Host) {
 	h := &Host{}
 	h.privateAddrRPC = concatIp(params.HostPrivateIP, params.HostsPortRPC)
 	h.publicAddrRPC = concatIp(params.HostPublicIP, params.HostsPortRPC)
-
 	h.privateAddrUDP = concatIp(params.HostPrivateIP, params.HostsPortUDP)
 	h.publicAddrUDP = concatIp(params.HostPublicIP, params.HostsPortUDP)
-
 	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
-
 	h.location = Location{Latitude: params.HostLatitude, Longitude: params.HostLongitude}
 
 	h.peers = make(map[string]bool)
 	h.peerLock = sync.Mutex{}
-
 	h.clientLock = sync.Mutex{}
 
-	//Seen host requests (prevent endless looping during flooding)
 	h.seenHostRequests = make(map[HostRequest]bool)
 	h.seenHostRequestsLock = sync.Mutex{}
+
+	h.currSeqNumber = 0
+	h.seqNumberLock = sync.Mutex{}
 
 	for _, peer := range params.PeerHosts {
 		h.addPeer(peer)

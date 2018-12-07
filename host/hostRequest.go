@@ -11,6 +11,7 @@ type HostRequestWithSender struct {
 }
 
 type HostRequest struct {
+	SequenceNumber		uint64
 	ClientLocation		Location
 	BestHostLocation	Location
 	RequestingHost 		string
