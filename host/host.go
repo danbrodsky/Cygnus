@@ -44,7 +44,6 @@ type Host struct {
 type HostInterface interface {
 	RpcAddPeer(ip string, reply *int) error
 	ReceiveHostRequest(args HostRequestWithSender, reply *int) error
-	Initialize(paramsPath string)
 	setUpMessageRPC()
 	notifyPeers()
 	addPeer(ip string)
