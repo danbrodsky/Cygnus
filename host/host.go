@@ -8,20 +8,27 @@ import (
 	"net"
 	"net/rpc"
 	"os"
-	"strconv"
+	///"strconv"
 	"sync"
 	"time"
+	"bytes"
+	"encoding/gob"
 	"github.com/DistributedClocks/GoVector/govec"
 	"github.com/DistributedClocks/GoVector/govec/vrpc"
 )
 
 const MaxTimeouts = 3
+const DEBUG_CONSENSUS_ACCEPTER = true
+const DEBUG_CONSENSUS_PROPOSER = true
 
 type Host struct {
 	hostID string
 
 	//Location of the host
 	location Location
+
+	// public ip of host
+	publicIp string
 
 	//For other hosts to connect using RPC
 	privateAddrRPC string
@@ -34,6 +41,11 @@ type Host struct {
 	//Used to connect to client
 	privateAddrClient string
 	publicAddrClient  string
+
+	//Used to recieve consensus connection
+	publicVerificationPortIp string
+	publicVerificationReturnPortIp string
+	blackList []string
 
 	//Peer ip addresses
 	peers    map[string]*rpc.Client
@@ -93,6 +105,9 @@ type Parameters struct {
 	AcceptClientsPort string   `json:"AcceptClientsPort"`
 	HostsPortRPC      string   `json:"HostsPortRPC"`
 	HostsPortUDP      string   `json:"HostsPortUDP"`
+	VerificationPortUDP      string   `json:"VerificationPortUDP"`
+	VerificationReturnPortUDP string `json:"VerificationReturnPortUDP"`
+	BlackList         []string  `json:"BlackList"`
 }
 
 var(
@@ -108,14 +123,24 @@ type Ack struct {
 	Sender      string
 }
 
+type VerificationMesssage struct {
+	ClientId string
+	ReturnIp string
+}
+
+type DecisionMessage struct{
+	HostId string
+	Decision bool
+}
+
 func (h *Host) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
-	log.Println(h.publicAddrRPC + " Received HeartBeat from " + hb.Sender + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
+	//log.Println(h.publicAddrRPC + " Received HeartBeat from " + hb.Sender + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
 
 	h.failureDetectorLock.Lock()
 	defer h.failureDetectorLock.Unlock()
 
 	ack := &Ack{HBeatSeqNum: hb.SeqNum, Sender: h.publicAddrRPC}
-	log.Println(h.publicAddrRPC + " Sending ACK to " + hb.Sender + " Seq num: " + strconv.Itoa(int(ack.HBeatSeqNum)))
+	//log.Println(h.publicAddrRPC + " Sending ACK to " + hb.Sender + " Seq num: " + strconv.Itoa(int(ack.HBeatSeqNum)))
 
 	client, ok := h.peers[hb.Sender]
 	if ok {
@@ -126,7 +151,7 @@ func (h *Host) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
 }
 
 func (h *Host) ReceiveACK(ack *Ack, reply *int) error {
-	log.Println(h.publicAddrRPC + " Received ACK from " + ack.Sender + " Seq num: " + strconv.Itoa(int(ack.HBeatSeqNum)))
+	//log.Println(h.publicAddrRPC + " Received ACK from " + ack.Sender + " Seq num: " + strconv.Itoa(int(ack.HBeatSeqNum)))
 
 	h.failureDetectorLock.Lock()
 	defer h.failureDetectorLock.Unlock()
@@ -181,6 +206,7 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 
 		sendResponse := func(isBest bool) {
 			messageToSend := hostRequest
+			messageToSend.SenderVerificationLAddr = h.publicVerificationPortIp
 			if isBest {
 				messageToSend.BestHost = h.publicAddrClient
 				messageToSend.BestHostLocation = h.location
@@ -289,6 +315,7 @@ func (h *Host) floodHostClientPair(pair HostClientPair) {
 	}
 }
 
+
 //After consensus is done for the client-host pairing, call this function to send the pairing to all hosts
 func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) {
 	h.seqNumberLockHC.Lock()
@@ -302,9 +329,116 @@ func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) {
 	h.floodHostClientPair(pair)
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//CONSENSES PROPOSE METHODS
+
+// Ask hosts that responded to the flooding for agreement to accept client
+func (h *Host) askForAgreement(clientId string,respondedHosts map[string]string) bool{
+	conn,err := getConnection(h.publicVerificationReturnPortIp)
+	if err != nil {
+                log.Fatal(err)
+        }
+	defer conn.Close()
+	decisionChan := make(chan bool)
+	go waitForDecisions(respondedHosts, conn, decisionChan)
+
+	for _, v := range respondedHosts {
+		vm := VerificationMesssage{ClientId: clientId, ReturnIp: conn.LocalAddr().String()}
+		h.proposeAcceptence(v, vm)
+	}
+	return <-decisionChan
+}
+
+// Sends a single propose message to host
+func (h *Host) proposeAcceptence(remoteIpPort string, vm VerificationMesssage){
+        conn, err := net.Dial("udp", remoteIpPort)
+        if err != nil {
+                log.Printf("Cannot resolve UDPAddress: Error %s\n", err)
+                return
+        }
+        var network bytes.Buffer
+        enc := gob.NewEncoder(&network)
+        err = enc.Encode(vm)
+        if err != nil {
+                log.Printf("Cannot encode to VerificationMesssage: Error %s\n", err)
+                return
+        }
+        _, err = conn.Write(network.Bytes())
+        if err != nil {
+                log.Println("Error writing to UDP", err)
+        }
+}
+
+// waits and concludes final decision wether to accept client.
+func waitForDecisions(respondedHosts map[string]string, conn *net.UDPConn, notifyChan chan bool){
+	defer conn.Close()
+	var network bytes.Buffer
+	buf := make([]byte, 1024)
+	respondedHostsDecisions := make(map[string]bool)
+	conn.SetReadDeadline(time.Now().Add(1*time.Second))
+	for end := time.Now().Add(3 * time.Second); ; {
+		if time.Now().After(end) {
+			break
+		}
+		var dm DecisionMessage
+                n, _, err := conn.ReadFromUDP(buf)
+                if err != nil {
+			//log.Println(err)
+			continue
+                }
+                network.Write(buf[0:n])
+                dec := gob.NewDecoder(&network)
+                err = dec.Decode(&dm)
+                if err != nil {
+                        log.Printf("Cannot decode to uint32: Error %s\n", err)
+			continue
+                }
+		if _, ok := respondedHosts[dm.HostId]; ok {
+			if(DEBUG_CONSENSUS_PROPOSER){
+				log.Println("adding decision for host:", dm.HostId)
+			}
+			respondedHostsDecisions[dm.HostId] = dm.Decision
+		}
+                network.Reset()
+	}
+
+	totalReqs := len(respondedHosts)
+	totalAgrees := 0
+	for _, v := range respondedHostsDecisions {
+		if(v){
+			totalAgrees++
+		}
+        }
+
+	if(DEBUG_CONSENSUS_PROPOSER){
+		log.Println("Total Proposes:", totalReqs)
+		log.Println("Total Agrees:", totalAgrees)
+	}
+	if(totalAgrees - (totalReqs/2) >= 0){
+		notifyChan <- true
+	} else{
+		notifyChan <- false
+	}
+}
+//CONSENSES PROPOSE METHODS END
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func getConnection(ip string) (conn *net.UDPConn, err error) {
+	lAddr, err := net.ResolveUDPAddr("udp", ip)
+	if err != nil {
+		return nil, err
+	}
+	l, err := net.ListenUDP("udp", lAddr)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return l, nil
+}
+
 //Will either return the ip of the best host, or an empty string if there are no hosts
 //TODO: this method probably doesn't need to be capitalized. Only is capitalize right now for testing purposes
-func (h *Host) FindHostForClient(clientAddr string, clientLocation Location) string {
+func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocation Location) string {
 	h.seqNumberLockHR.Lock()
 	seqNum := h.currSeqNumberHR
 	h.currSeqNumberHR++
@@ -319,16 +453,25 @@ func (h *Host) FindHostForClient(clientAddr string, clientLocation Location) str
 
 	log.Println(respondedHosts) //Array of host IDs that responded to the flooded request
 
+	decision := h.askForAgreement(clientId, respondedHosts)
+	if(DEBUG_CONSENSUS_PROPOSER){
+		log.Println("Client:", clientId ,"Network Decision:", decision)
+	}
+
 	//TODO: Check that there actually is a best host (bestHost != "")
-	//TODO: Do consensus before we send the best client-host pair to everyone
 
 	//Flood the best client-host pairing
 	h.sendHostClientPair(clientAddr, bestHost)
-	return bestHost
+
+	if(decision){
+		return bestHost
+	} else{
+		return "-1.-1.-1.-1"
+	}
 }
 
 //Wait for hosts to respond. Then choose the best host
-func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string] bool, string) {
+func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string]string, string) {
 	bestHost := ""
 	bestHostLocation := Location{}
 	currentBestDistance := float64(0)
@@ -357,7 +500,7 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 	timeoutTime := time.Now().Add(time.Second * 3)
 	l.SetReadDeadline(timeoutTime)
 
-	respondedHosts := make(map[string] bool)
+	respondedHosts := make(map[string]string)
 
 	for time.Now().Before(timeoutTime) {
 		buffer := make([]byte, 1024)
@@ -381,7 +524,7 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 						currentBestDistance = distance(clientLocation, bestHostLocation)
 					}
 				}
-				respondedHosts[hostRequest.RespondingHost] = true
+				respondedHosts[hostRequest.RespondingHost] = hostRequest.SenderVerificationLAddr
 			}
 		}
 	}
@@ -390,7 +533,7 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 }
 
 func (h *Host) monitorNode(peer string) {
-	log.Println("Begin monitoring: " + peer)
+	//log.Println("Begin monitoring: " + peer)
 
 	seqNum := uint64(0)
 	h.peerTimeoutsLock.Lock()
@@ -408,7 +551,7 @@ func (h *Host) monitorNode(peer string) {
 			var reply int
 			hb := &HeartBeat{SeqNum: seqNum, Sender: h.publicAddrRPC}
 
-			log.Println(h.publicAddrRPC + " Sending Heartbeat to " + peer + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
+			//log.Println(h.publicAddrRPC + " Sending Heartbeat to " + peer + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
 			client.Go("Host.ReceiveHeartBeat", hb, &reply, nil)
 			time.Sleep(1 * time.Second)
 
@@ -456,8 +599,64 @@ func concatIp(ip string, port string) string {
 	return ip + ":" + port
 }
 
-func handleVerificationRequests(verificationAddrPort string){
-	//Wait for other hosts to send verification requests for client on the udp connection
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//CONSENSES ACCPETOR METHODS
+func (h *Host) handleVerificationRequests(){
+	conn, err := getConnection(h.publicVerificationPortIp)
+	if err != nil {
+                log.Fatal(err)
+        }
+
+	var network bytes.Buffer
+	buf := make([]byte, 1024)
+	for {
+		var vm VerificationMesssage
+		n, _, err := conn.ReadFromUDP(buf)
+		if err != nil {
+			return
+		}
+		//transfer from byte array to buffer because the canonical
+		//io.Copy(&network,conn) requires size checks.
+		network.Write(buf[0:n])
+		dec := gob.NewDecoder(&network)
+		err = dec.Decode(&vm)
+		//fmt.Println(hbm)
+		if err != nil {
+			log.Printf("Cannot decode to uint32: Error %s\n", err)
+		}
+		if(DEBUG_CONSENSUS_ACCEPTER){
+			log.Println("incoming verification request: ",vm)
+		}
+		h.respondDecision(vm)
+		network.Reset()
+	}
+}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+func (h *Host) respondDecision(vm VerificationMesssage){
+	// TODO filter with blacklist
+	dm := DecisionMessage{HostId: h.hostID, Decision:true}
+	for _,v := range h.blackList {
+		if(v == vm.ClientId){
+			dm.Decision = false
+		}
+	}
+	conn, err := net.Dial("udp", vm.ReturnIp)
+        if err != nil {
+                log.Printf("Cannot resolve UDPAddress: Error %s\n", err)
+                return
+        }
+        var network bytes.Buffer
+        enc := gob.NewEncoder(&network)
+        err = enc.Encode(dm)
+        if err != nil {
+                log.Printf("Cannot encode to VerificationMesssage: Error %s\n", err)
+                return
+        }
+        _, err = conn.Write(network.Bytes())
+        if err != nil {
+                log.Println("Error writing to UDP", err)
+        }
 }
 
 func Initialize(paramsPath string) (*Host) {
@@ -473,6 +672,8 @@ func Initialize(paramsPath string) (*Host) {
 
 	h := &Host{}
 	h.hostID = params.HostID
+	h.blackList = params.BlackList
+
 	h.privateAddrRPC = concatIp(params.HostPrivateIP, params.HostsPortRPC)
 	h.publicAddrRPC = concatIp(params.HostPublicIP, params.HostsPortRPC)
 	h.privateAddrUDP = concatIp(params.HostPrivateIP, params.HostsPortUDP)
@@ -480,6 +681,9 @@ func Initialize(paramsPath string) (*Host) {
 	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
 	h.location = Location{Latitude: params.HostLatitude, Longitude: params.HostLongitude}
+
+	h.publicVerificationPortIp = concatIp(params.HostPublicIP, params.VerificationPortUDP)
+	h.publicVerificationReturnPortIp = concatIp(params.HostPublicIP, params.VerificationReturnPortUDP)
 
 	h.govecLogger = govec.InitGoVector(params.HostID, "./logs/" + params.HostID, govec.GetDefaultConfig())
 
@@ -507,6 +711,7 @@ func Initialize(paramsPath string) (*Host) {
 	}
 	h.setUpMessageRPC()
 	h.notifyPeers()
+	go h.handleVerificationRequests()
 
 	return h
 }

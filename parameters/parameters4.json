@@ -7,5 +7,8 @@
   "HostPrivateIP" : "127.0.0.1",
   "AcceptClientsPort": "8000",
   "HostsPortRPC": "8001",
-  "HostsPortUDP": "8002"
+  "HostsPortUDP": "8002",
+  "VerificationPortUDP": "8003",
+  "VerificationReturnPortUDP": "8004",
+  "BlackList": []
 }

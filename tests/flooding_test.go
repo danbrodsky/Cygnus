@@ -26,7 +26,7 @@ func TestFlooding(t *testing.T) {
 	//Client is in Richmond, BC. Should be closes to the host in Vancouver
 	clientLocation := host.Location{Latitude: 49.166592, Longitude: -123.133568}
 	expectedHost := "127.0.0.1:5000"
-	foundHost := host5.FindHostForClient("127.0.0.1:5050", clientLocation)
+	foundHost := host5.FindHostForClient("jcho","127.0.0.1:5050", clientLocation)
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
@@ -37,7 +37,7 @@ func TestFlooding(t *testing.T) {
 	//Client is in Tokyo. Should be closes to the host in Osaka
 	clientLocation = host.Location{Latitude: 35.689487, Longitude: 139.691711}
 	expectedHost = "127.0.0.1:9000"
-	foundHost = host3.FindHostForClient("127.0.0.1:5052", clientLocation)
+	foundHost = host3.FindHostForClient("jcho","127.0.0.1:5052", clientLocation)
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
@@ -48,7 +48,7 @@ func TestFlooding(t *testing.T) {
 	//Since the host with Vancouver is already taken, it should find the host in Seattle
 	clientLocation = host.Location{Latitude: 49.166592, Longitude: -123.133568}
 	expectedHost = "127.0.0.1:4000"
-	foundHost = host5.FindHostForClient("127.0.0.1:5051", clientLocation)
+	foundHost = host5.FindHostForClient("jcho","127.0.0.1:5051", clientLocation)
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}

@@ -1,10 +1,374 @@
 HVancouver {"HVancouver":1}
 Initialization Complete
-HVancouver {"HVancouver":2, "HLondon":2}
+HVancouver {"HLondon":2, "HVancouver":2}
 Received RPC request
-HVancouver {"HVancouver":3, "HLondon":2}
-Sending response to RPC request
-HVancouver {"HOsaka":4, "Host_Seattle":2, "HVancouver":4, "HLondon":9, "HBeijing":9}
+HVancouver {"HVancouver":3, "HLondon":5}
 Received RPC request
-HVancouver {"HOsaka":4, "Host_Seattle":2, "HVancouver":5, "HLondon":9, "HBeijing":9}
+HVancouver {"HVancouver":4, "HLondon":5}
+Making RPC call
+HVancouver {"HVancouver":5, "HLondon":5}
 Sending response to RPC request
+HVancouver {"HVancouver":6, "HLondon":5}
+Sending response to RPC request
+HVancouver {"HLondon":7, "HVancouver":7}
+Received RPC request
+HVancouver {"HVancouver":8, "HLondon":7}
+Sending response to RPC request
+HVancouver {"HVancouver":9, "HLondon":8}
+Received RPC Call response from server
+HVancouver {"HBeijing":16, "HSeattle":3, "HVancouver":10, "HLondon":24, "HOsaka":4, "HBerlin":8}
+Received RPC request
+HVancouver {"HVancouver":11, "HLondon":24, "HOsaka":4, "HBerlin":8, "HBeijing":16, "HSeattle":3}
+Sending response to RPC request
+HVancouver {"HBerlin":8, "HBeijing":16, "HSeattle":3, "HVancouver":12, "HLondon":24, "HOsaka":4}
+Making RPC call
+HVancouver {"HOsaka":4, "HBerlin":8, "HBeijing":23, "HSeattle":3, "HVancouver":13, "HLondon":33}
+Received RPC request
+HVancouver {"HBeijing":23, "HSeattle":3, "HVancouver":14, "HLondon":33, "HOsaka":4, "HBerlin":8}
+Making RPC call
+HVancouver {"HSeattle":3, "HVancouver":15, "HLondon":33, "HOsaka":4, "HBerlin":8, "HBeijing":23}
+Sending response to RPC request
+HVancouver {"HVancouver":16, "HLondon":43, "HOsaka":11, "HBerlin":15, "HBeijing":34, "HSeattle":12}
+Received RPC request
+HVancouver {"HVancouver":17, "HLondon":43, "HOsaka":11, "HBerlin":15, "HBeijing":34, "HSeattle":12}
+Sending response to RPC request
+HVancouver {"HVancouver":18, "HLondon":44, "HOsaka":11, "HBerlin":15, "HBeijing":34, "HSeattle":12}
+Received RPC Call response from server
+HVancouver {"HBerlin":18, "HBeijing":34, "HSeattle":12, "HVancouver":19, "HLondon":50, "HOsaka":11}
+Received RPC Call response from server
+HVancouver {"HLondon":50, "HOsaka":11, "HBerlin":18, "HBeijing":34, "HSeattle":12, "HVancouver":20}
+Making RPC call
+HVancouver {"HOsaka":23, "HBerlin":18, "HBeijing":54, "HSeattle":20, "HVancouver":21, "HLondon":57}
+Received RPC request
+HVancouver {"HVancouver":22, "HLondon":57, "HOsaka":23, "HBerlin":18, "HBeijing":54, "HSeattle":20}
+Making RPC call
+HVancouver {"HVancouver":23, "HLondon":57, "HOsaka":23, "HBerlin":18, "HBeijing":54, "HSeattle":20}
+Sending response to RPC request
+HVancouver {"HVancouver":24, "HLondon":64, "HOsaka":23, "HBerlin":23, "HBeijing":58, "HSeattle":20}
+Received RPC request
+HVancouver {"HVancouver":25, "HLondon":64, "HOsaka":23, "HBerlin":23, "HBeijing":58, "HSeattle":20}
+Sending response to RPC request
+HVancouver {"HLondon":67, "HOsaka":23, "HBerlin":23, "HBeijing":58, "HSeattle":20, "HVancouver":26}
+Received RPC Call response from server
+HVancouver {"HBeijing":58, "HSeattle":20, "HVancouver":27, "HLondon":75, "HOsaka":23, "HBerlin":26}
+Received RPC Call response from server
+HVancouver {"HBeijing":58, "HSeattle":20, "HVancouver":28, "HLondon":75, "HOsaka":23, "HBerlin":26}
+Making RPC call
+HVancouver {"HLondon":83, "HOsaka":30, "HBerlin":28, "HBeijing":80, "HSeattle":28, "HVancouver":29}
+Received RPC request
+HVancouver {"HOsaka":30, "HBerlin":28, "HBeijing":80, "HSeattle":28, "HVancouver":30, "HLondon":84}
+Received RPC Call response from server
+HVancouver {"HBeijing":80, "HSeattle":28, "HVancouver":31, "HLondon":84, "HOsaka":30, "HBerlin":28}
+Sending response to RPC request
+HVancouver {"HBerlin":33, "HBeijing":80, "HSeattle":28, "HVancouver":32, "HLondon":92, "HOsaka":30}
+Received RPC request
+HVancouver {"HLondon":92, "HOsaka":30, "HBerlin":33, "HBeijing":80, "HSeattle":28, "HVancouver":33}
+Making RPC call
+HVancouver {"HBeijing":80, "HSeattle":28, "HVancouver":34, "HLondon":92, "HOsaka":30, "HBerlin":33}
+Sending response to RPC request
+HVancouver {"HBeijing":82, "HSeattle":28, "HVancouver":35, "HLondon":98, "HOsaka":30, "HBerlin":33}
+Received RPC Call response from server
+HVancouver {"HBeijing":82, "HSeattle":28, "HVancouver":36, "HLondon":98, "HOsaka":30, "HBerlin":33}
+Making RPC call
+HVancouver {"HVancouver":37, "HLondon":106, "HOsaka":38, "HBerlin":33, "HBeijing":104, "HSeattle":35}
+Received RPC request
+HVancouver {"HVancouver":38, "HLondon":107, "HOsaka":38, "HBerlin":33, "HBeijing":104, "HSeattle":35}
+Received RPC Call response from server
+HVancouver {"HLondon":107, "HOsaka":38, "HBerlin":33, "HBeijing":104, "HSeattle":35, "HVancouver":39}
+Sending response to RPC request
+HVancouver {"HBerlin":42, "HBeijing":104, "HSeattle":35, "HVancouver":40, "HLondon":116, "HOsaka":38}
+Received RPC request
+HVancouver {"HVancouver":41, "HLondon":116, "HOsaka":38, "HBerlin":42, "HBeijing":104, "HSeattle":35}
+Making RPC call
+HVancouver {"HBeijing":104, "HSeattle":35, "HVancouver":42, "HLondon":116, "HOsaka":38, "HBerlin":42}
+Sending response to RPC request
+HVancouver {"HBerlin":42, "HBeijing":106, "HSeattle":35, "HVancouver":43, "HLondon":122, "HOsaka":38}
+Received RPC Call response from server
+HVancouver {"HVancouver":44, "HLondon":122, "HOsaka":38, "HBerlin":42, "HBeijing":106, "HSeattle":35}
+Making RPC call
+HVancouver {"HSeattle":43, "HVancouver":45, "HLondon":131, "HOsaka":47, "HBerlin":44, "HBeijing":128}
+Received RPC request
+HVancouver {"HBerlin":44, "HBeijing":128, "HSeattle":43, "HVancouver":46, "HLondon":131, "HOsaka":47}
+Sending response to RPC request
+HVancouver {"HVancouver":47, "HLondon":133, "HOsaka":47, "HBerlin":47, "HBeijing":128, "HSeattle":43}
+Received RPC Call response from server
+HVancouver {"HVancouver":48, "HLondon":140, "HOsaka":47, "HBerlin":49, "HBeijing":128, "HSeattle":43}
+Received RPC request
+HVancouver {"HBeijing":128, "HSeattle":43, "HVancouver":49, "HLondon":140, "HOsaka":47, "HBerlin":49}
+Making RPC call
+HVancouver {"HOsaka":47, "HBerlin":49, "HBeijing":128, "HSeattle":43, "HVancouver":50, "HLondon":140}
+Sending response to RPC request
+HVancouver {"HLondon":146, "HOsaka":47, "HBerlin":49, "HBeijing":130, "HSeattle":43, "HVancouver":51}
+Received RPC Call response from server
+HVancouver {"HVancouver":52, "HLondon":153, "HOsaka":57, "HBerlin":49, "HBeijing":155, "HSeattle":52}
+Received RPC request
+HVancouver {"HVancouver":53, "HLondon":153, "HOsaka":57, "HBerlin":49, "HBeijing":155, "HSeattle":52}
+Sending response to RPC request
+HVancouver {"HVancouver":54, "HLondon":153, "HOsaka":57, "HBerlin":49, "HBeijing":155, "HSeattle":52}
+Making RPC call
+HVancouver {"HVancouver":55, "HLondon":166, "HOsaka":57, "HBerlin":55, "HBeijing":155, "HSeattle":52}
+Received RPC request
+HVancouver {"HVancouver":56, "HLondon":167, "HOsaka":57, "HBerlin":55, "HBeijing":155, "HSeattle":52}
+Received RPC Call response from server
+HVancouver {"HBeijing":155, "HSeattle":52, "HVancouver":57, "HLondon":167, "HOsaka":57, "HBerlin":55}
+Sending response to RPC request
+HVancouver {"HVancouver":58, "HLondon":174, "HOsaka":57, "HBerlin":62, "HBeijing":155, "HSeattle":52}
+Received RPC request
+HVancouver {"HLondon":174, "HOsaka":57, "HBerlin":62, "HBeijing":155, "HSeattle":52, "HVancouver":59}
+Making RPC call
+HVancouver {"HBeijing":155, "HSeattle":52, "HVancouver":60, "HLondon":174, "HOsaka":57, "HBerlin":62}
+Sending response to RPC request
+HVancouver {"HSeattle":52, "HVancouver":61, "HLondon":177, "HOsaka":57, "HBerlin":62, "HBeijing":155}
+Received RPC Call response from server
+HVancouver {"HVancouver":62, "HLondon":186, "HOsaka":69, "HBerlin":62, "HBeijing":190, "HSeattle":64}
+Received RPC request
+HVancouver {"HVancouver":63, "HLondon":186, "HOsaka":69, "HBerlin":62, "HBeijing":190, "HSeattle":64}
+Making RPC call
+HVancouver {"HOsaka":69, "HBerlin":62, "HBeijing":190, "HSeattle":64, "HVancouver":64, "HLondon":186}
+Sending response to RPC request
+HVancouver {"HOsaka":69, "HBerlin":64, "HBeijing":190, "HSeattle":64, "HVancouver":65, "HLondon":196}
+Received RPC request
+HVancouver {"HVancouver":66, "HLondon":198, "HOsaka":69, "HBerlin":64, "HBeijing":190, "HSeattle":64}
+Received RPC Call response from server
+HVancouver {"HBeijing":190, "HSeattle":64, "HVancouver":67, "HLondon":198, "HOsaka":69, "HBerlin":64}
+Sending response to RPC request
+HVancouver {"HLondon":200, "HOsaka":69, "HBerlin":64, "HBeijing":190, "HSeattle":64, "HVancouver":68}
+Received RPC request
+HVancouver {"HBeijing":190, "HSeattle":64, "HVancouver":69, "HLondon":200, "HOsaka":69, "HBerlin":64}
+Making RPC call
+HVancouver {"HBeijing":190, "HSeattle":64, "HVancouver":70, "HLondon":200, "HOsaka":69, "HBerlin":64}
+Sending response to RPC request
+HVancouver {"HLondon":212, "HOsaka":69, "HBerlin":72, "HBeijing":197, "HSeattle":67, "HVancouver":71}
+Received RPC Call response from server
+HVancouver {"HVancouver":72, "HLondon":212, "HOsaka":69, "HBerlin":72, "HBeijing":197, "HSeattle":67}
+Making RPC call
+HVancouver {"HBerlin":74, "HBeijing":217, "HSeattle":74, "HVancouver":73, "HLondon":224, "HOsaka":75}
+Received RPC request
+HVancouver {"HLondon":225, "HOsaka":75, "HBerlin":74, "HBeijing":217, "HSeattle":74, "HVancouver":74}
+Received RPC Call response from server
+HVancouver {"HVancouver":75, "HLondon":225, "HOsaka":75, "HBerlin":74, "HBeijing":217, "HSeattle":74}
+Sending response to RPC request
+HVancouver {"HLondon":228, "HOsaka":75, "HBerlin":79, "HBeijing":217, "HSeattle":74, "HVancouver":76}
+Received RPC request
+HVancouver {"HVancouver":77, "HLondon":228, "HOsaka":75, "HBerlin":79, "HBeijing":217, "HSeattle":74}
+Making RPC call
+HVancouver {"HBerlin":79, "HBeijing":217, "HSeattle":74, "HVancouver":78, "HLondon":228, "HOsaka":75}
+Sending response to RPC request
+HVancouver {"HVancouver":79, "HLondon":237, "HOsaka":79, "HBerlin":80, "HBeijing":223, "HSeattle":76}
+Received RPC Call response from server
+HVancouver {"HVancouver":80, "HLondon":237, "HOsaka":79, "HBerlin":80, "HBeijing":223, "HSeattle":76}
+Making RPC call
+HVancouver {"HVancouver":81, "HLondon":247, "HOsaka":84, "HBerlin":82, "HBeijing":241, "HSeattle":82}
+Received RPC request
+HVancouver {"HSeattle":82, "HVancouver":82, "HLondon":248, "HOsaka":84, "HBerlin":82, "HBeijing":241}
+Received RPC Call response from server
+HVancouver {"HOsaka":84, "HBerlin":82, "HBeijing":241, "HSeattle":82, "HVancouver":83, "HLondon":248}
+Sending response to RPC request
+HVancouver {"HVancouver":84, "HLondon":252, "HOsaka":84, "HBerlin":85, "HBeijing":241, "HSeattle":82}
+Received RPC request
+HVancouver {"HLondon":252, "HOsaka":84, "HBerlin":85, "HBeijing":241, "HSeattle":82, "HVancouver":85}
+Making RPC call
+HVancouver {"HSeattle":82, "HVancouver":86, "HLondon":252, "HOsaka":84, "HBerlin":85, "HBeijing":241}
+Sending response to RPC request
+HVancouver {"HBerlin":88, "HBeijing":248, "HSeattle":84, "HVancouver":87, "HLondon":261, "HOsaka":89}
+Received RPC Call response from server
+HVancouver {"HOsaka":89, "HBerlin":88, "HBeijing":248, "HSeattle":84, "HVancouver":88, "HLondon":261}
+Making RPC call
+HVancouver {"HVancouver":89, "HLondon":270, "HOsaka":92, "HBerlin":90, "HBeijing":264, "HSeattle":90}
+Received RPC request
+HVancouver {"HLondon":271, "HOsaka":92, "HBerlin":90, "HBeijing":264, "HSeattle":90, "HVancouver":90}
+Received RPC Call response from server
+HVancouver {"HOsaka":92, "HBerlin":90, "HBeijing":264, "HSeattle":90, "HVancouver":91, "HLondon":271}
+Sending response to RPC request
+HVancouver {"HSeattle":92, "HVancouver":92, "HLondon":276, "HOsaka":95, "HBerlin":92, "HBeijing":271}
+Received RPC request
+HVancouver {"HVancouver":93, "HLondon":276, "HOsaka":95, "HBerlin":92, "HBeijing":271, "HSeattle":92}
+Making RPC call
+HVancouver {"HVancouver":94, "HLondon":276, "HOsaka":95, "HBerlin":92, "HBeijing":271, "HSeattle":92}
+Sending response to RPC request
+HVancouver {"HSeattle":92, "HVancouver":95, "HLondon":284, "HOsaka":95, "HBerlin":95, "HBeijing":271}
+Received RPC Call response from server
+HVancouver {"HVancouver":96, "HLondon":284, "HOsaka":95, "HBerlin":95, "HBeijing":271, "HSeattle":92}
+Making RPC call
+HVancouver {"HVancouver":97, "HLondon":292, "HOsaka":103, "HBerlin":95, "HBeijing":291, "HSeattle":98}
+Received RPC request
+HVancouver {"HVancouver":98, "HLondon":293, "HOsaka":103, "HBerlin":95, "HBeijing":291, "HSeattle":98}
+Received RPC Call response from server
+HVancouver {"HVancouver":99, "HLondon":293, "HOsaka":103, "HBerlin":95, "HBeijing":291, "HSeattle":98}
+Sending response to RPC request
+HVancouver {"HLondon":303, "HOsaka":105, "HBerlin":100, "HBeijing":298, "HSeattle":100, "HVancouver":100}
+Received RPC request
+HVancouver {"HVancouver":101, "HLondon":303, "HOsaka":105, "HBerlin":100, "HBeijing":298, "HSeattle":100}
+Making RPC call
+HVancouver {"HBeijing":298, "HSeattle":100, "HVancouver":102, "HLondon":303, "HOsaka":105, "HBerlin":100}
+Sending response to RPC request
+HVancouver {"HBeijing":305, "HSeattle":103, "HVancouver":103, "HLondon":310, "HOsaka":105, "HBerlin":104}
+Received RPC Call response from server
+HVancouver {"HBerlin":104, "HBeijing":305, "HSeattle":103, "HVancouver":104, "HLondon":310, "HOsaka":105}
+Making RPC call
+HVancouver {"HBerlin":104, "HBeijing":315, "HSeattle":106, "HVancouver":105, "HLondon":316, "HOsaka":111}
+Received RPC request
+HVancouver {"HVancouver":106, "HLondon":317, "HOsaka":111, "HBerlin":104, "HBeijing":315, "HSeattle":106}
+Received RPC Call response from server
+HVancouver {"HVancouver":107, "HLondon":317, "HOsaka":111, "HBerlin":104, "HBeijing":315, "HSeattle":106}
+Sending response to RPC request
+HVancouver {"HVancouver":108, "HLondon":327, "HOsaka":113, "HBerlin":108, "HBeijing":325, "HSeattle":111}
+Received RPC request
+HVancouver {"HOsaka":113, "HBerlin":108, "HBeijing":325, "HSeattle":111, "HVancouver":109, "HLondon":327}
+Making RPC call
+HVancouver {"HVancouver":110, "HLondon":327, "HOsaka":113, "HBerlin":108, "HBeijing":325, "HSeattle":111}
+Sending response to RPC request
+HVancouver {"HLondon":334, "HOsaka":116, "HBerlin":112, "HBeijing":328, "HSeattle":111, "HVancouver":111}
+Received RPC Call response from server
+HVancouver {"HLondon":339, "HOsaka":119, "HBerlin":112, "HBeijing":340, "HSeattle":114, "HVancouver":112}
+Received RPC request
+HVancouver {"HOsaka":119, "HBerlin":112, "HBeijing":340, "HSeattle":114, "HVancouver":113, "HLondon":339}
+Making RPC call
+HVancouver {"HVancouver":114, "HLondon":339, "HOsaka":119, "HBerlin":112, "HBeijing":340, "HSeattle":114}
+Making RPC call
+HVancouver {"HVancouver":115, "HLondon":339, "HOsaka":119, "HBerlin":112, "HBeijing":340, "HSeattle":114}
+Sending response to RPC request
+HVancouver {"HLondon":351, "HOsaka":119, "HBerlin":120, "HBeijing":340, "HSeattle":114, "HVancouver":116}
+Received RPC request
+HVancouver {"HVancouver":117, "HLondon":351, "HOsaka":119, "HBerlin":120, "HBeijing":340, "HSeattle":114}
+Sending response to RPC request
+HVancouver {"HBerlin":120, "HBeijing":345, "HSeattle":114, "HVancouver":118, "HLondon":359, "HOsaka":119}
+Received RPC request
+HVancouver {"HVancouver":119, "HLondon":359, "HOsaka":119, "HBerlin":120, "HBeijing":345, "HSeattle":114}
+Sending response to RPC request
+HVancouver {"HVancouver":120, "HLondon":359, "HOsaka":119, "HBerlin":120, "HBeijing":345, "HSeattle":114}
+Received RPC Call response from server
+HVancouver {"HSeattle":114, "HVancouver":121, "HLondon":363, "HOsaka":119, "HBerlin":120, "HBeijing":345}
+Received RPC Call response from server
+HVancouver {"HSeattle":121, "HVancouver":122, "HLondon":373, "HOsaka":125, "HBerlin":126, "HBeijing":364}
+Received RPC request
+HVancouver {"HBeijing":364, "HSeattle":121, "HVancouver":123, "HLondon":373, "HOsaka":125, "HBerlin":126}
+Making RPC call
+HVancouver {"HVancouver":124, "HLondon":373, "HOsaka":125, "HBerlin":126, "HBeijing":364, "HSeattle":121}
+Sending response to RPC request
+HVancouver {"HOsaka":125, "HBerlin":126, "HBeijing":364, "HSeattle":121, "HVancouver":125, "HLondon":376}
+Received RPC Call response from server
+HVancouver {"HVancouver":126, "HLondon":376, "HOsaka":125, "HBerlin":126, "HBeijing":364, "HSeattle":121}
+Making RPC call
+HVancouver {"HBeijing":376, "HSeattle":126, "HVancouver":127, "HLondon":382, "HOsaka":129, "HBerlin":126}
+Received RPC request
+HVancouver {"HOsaka":129, "HBerlin":126, "HBeijing":376, "HSeattle":126, "HVancouver":128, "HLondon":383}
+Received RPC Call response from server
+HVancouver {"HBerlin":126, "HBeijing":376, "HSeattle":126, "HVancouver":129, "HLondon":383, "HOsaka":129}
+Sending response to RPC request
+HVancouver {"HOsaka":131, "HBerlin":128, "HBeijing":380, "HSeattle":128, "HVancouver":130, "HLondon":390}
+Received RPC request
+HVancouver {"HSeattle":128, "HVancouver":131, "HLondon":390, "HOsaka":131, "HBerlin":128, "HBeijing":380}
+Sending response to RPC request
+HVancouver {"HVancouver":132, "HLondon":394, "HOsaka":131, "HBerlin":130, "HBeijing":380, "HSeattle":128}
+Received RPC request
+HVancouver {"HVancouver":133, "HLondon":394, "HOsaka":131, "HBerlin":130, "HBeijing":380, "HSeattle":128}
+Making RPC call
+HVancouver {"HSeattle":128, "HVancouver":134, "HLondon":394, "HOsaka":131, "HBerlin":130, "HBeijing":380}
+Sending response to RPC request
+HVancouver {"HOsaka":132, "HBerlin":134, "HBeijing":386, "HSeattle":128, "HVancouver":135, "HLondon":406}
+Received RPC Call response from server
+HVancouver {"HVancouver":136, "HLondon":406, "HOsaka":132, "HBerlin":134, "HBeijing":386, "HSeattle":128}
+Making RPC call
+HVancouver {"HSeattle":136, "HVancouver":137, "HLondon":413, "HOsaka":142, "HBerlin":138, "HBeijing":403}
+Received RPC request
+HVancouver {"HVancouver":138, "HLondon":414, "HOsaka":142, "HBerlin":138, "HBeijing":403, "HSeattle":136}
+Received RPC Call response from server
+HVancouver {"HVancouver":139, "HLondon":414, "HOsaka":142, "HBerlin":138, "HBeijing":403, "HSeattle":136}
+Sending response to RPC request
+HVancouver {"HBeijing":418, "HSeattle":141, "HVancouver":140, "HLondon":427, "HOsaka":149, "HBerlin":144}
+Received RPC request
+HVancouver {"HVancouver":141, "HLondon":427, "HOsaka":149, "HBerlin":144, "HBeijing":418, "HSeattle":141}
+Making RPC call
+HVancouver {"HVancouver":142, "HLondon":427, "HOsaka":149, "HBerlin":144, "HBeijing":418, "HSeattle":141}
+Sending response to RPC request
+HVancouver {"HVancouver":143, "HLondon":430, "HOsaka":149, "HBerlin":144, "HBeijing":418, "HSeattle":141}
+Received RPC Call response from server
+HVancouver {"HVancouver":144, "HLondon":430, "HOsaka":149, "HBerlin":144, "HBeijing":418, "HSeattle":141}
+Making RPC call
+HVancouver {"HBerlin":146, "HBeijing":423, "HSeattle":141, "HVancouver":145, "HLondon":437, "HOsaka":149}
+Received RPC request
+HVancouver {"HSeattle":141, "HVancouver":146, "HLondon":438, "HOsaka":149, "HBerlin":146, "HBeijing":423}
+Received RPC Call response from server
+HVancouver {"HOsaka":149, "HBerlin":146, "HBeijing":423, "HSeattle":141, "HVancouver":147, "HLondon":438}
+Sending response to RPC request
+HVancouver {"HBeijing":443, "HSeattle":149, "HVancouver":148, "HLondon":451, "HOsaka":156, "HBerlin":152}
+Received RPC request
+HVancouver {"HVancouver":149, "HLondon":451, "HOsaka":156, "HBerlin":152, "HBeijing":443, "HSeattle":149}
+Making RPC call
+HVancouver {"HBeijing":443, "HSeattle":149, "HVancouver":150, "HLondon":451, "HOsaka":156, "HBerlin":152}
+Sending response to RPC request
+HVancouver {"HVancouver":151, "HLondon":454, "HOsaka":156, "HBerlin":152, "HBeijing":443, "HSeattle":149}
+Received RPC Call response from server
+HVancouver {"HOsaka":156, "HBerlin":152, "HBeijing":443, "HSeattle":149, "HVancouver":152, "HLondon":454}
+Making RPC call
+HVancouver {"HSeattle":149, "HVancouver":153, "HLondon":461, "HOsaka":156, "HBerlin":154, "HBeijing":447}
+Received RPC request
+HVancouver {"HLondon":462, "HOsaka":156, "HBerlin":154, "HBeijing":447, "HSeattle":149, "HVancouver":154}
+Received RPC Call response from server
+HVancouver {"HOsaka":156, "HBerlin":154, "HBeijing":447, "HSeattle":149, "HVancouver":155, "HLondon":462}
+Sending response to RPC request
+HVancouver {"HOsaka":165, "HBerlin":160, "HBeijing":467, "HSeattle":156, "HVancouver":156, "HLondon":475}
+Received RPC request
+HVancouver {"HSeattle":156, "HVancouver":157, "HLondon":475, "HOsaka":165, "HBerlin":160, "HBeijing":467}
+Making RPC call
+HVancouver {"HBeijing":467, "HSeattle":156, "HVancouver":158, "HLondon":475, "HOsaka":165, "HBerlin":160}
+Sending response to RPC request
+HVancouver {"HVancouver":159, "HLondon":478, "HOsaka":165, "HBerlin":160, "HBeijing":467, "HSeattle":156}
+Received RPC Call response from server
+HVancouver {"HVancouver":160, "HLondon":478, "HOsaka":165, "HBerlin":160, "HBeijing":467, "HSeattle":156}
+Making RPC call
+HVancouver {"HBerlin":162, "HBeijing":480, "HSeattle":160, "HVancouver":161, "HLondon":489, "HOsaka":168}
+Received RPC request
+HVancouver {"HSeattle":160, "HVancouver":162, "HLondon":489, "HOsaka":168, "HBerlin":162, "HBeijing":480}
+Sending response to RPC request
+HVancouver {"HLondon":490, "HOsaka":168, "HBerlin":162, "HBeijing":480, "HSeattle":160, "HVancouver":163}
+Received RPC Call response from server
+HVancouver {"HSeattle":160, "HVancouver":164, "HLondon":495, "HOsaka":168, "HBerlin":167, "HBeijing":480}
+Received RPC request
+HVancouver {"HOsaka":168, "HBerlin":167, "HBeijing":480, "HSeattle":160, "HVancouver":165, "HLondon":495}
+Making RPC call
+HVancouver {"HVancouver":166, "HLondon":495, "HOsaka":168, "HBerlin":167, "HBeijing":480, "HSeattle":160}
+Sending response to RPC request
+HVancouver {"HLondon":503, "HOsaka":172, "HBerlin":168, "HBeijing":490, "HSeattle":164, "HVancouver":167}
+Received RPC Call response from server
+HVancouver {"HOsaka":172, "HBerlin":168, "HBeijing":490, "HSeattle":164, "HVancouver":168, "HLondon":503}
+Making RPC call
+HVancouver {"HVancouver":169, "HLondon":509, "HOsaka":176, "HBerlin":170, "HBeijing":499, "HSeattle":167}
+Received RPC request
+HVancouver {"HVancouver":170, "HLondon":509, "HOsaka":176, "HBerlin":170, "HBeijing":499, "HSeattle":167}
+Sending response to RPC request
+HVancouver {"HLondon":510, "HOsaka":176, "HBerlin":170, "HBeijing":499, "HSeattle":167, "HVancouver":171}
+Received RPC Call response from server
+HVancouver {"HBerlin":176, "HBeijing":514, "HSeattle":172, "HVancouver":172, "HLondon":523, "HOsaka":178}
+Received RPC request
+HVancouver {"HVancouver":173, "HLondon":523, "HOsaka":178, "HBerlin":176, "HBeijing":514, "HSeattle":172}
+Making RPC call
+HVancouver {"HBeijing":514, "HSeattle":172, "HVancouver":174, "HLondon":523, "HOsaka":178, "HBerlin":176}
+Sending response to RPC request
+HVancouver {"HVancouver":175, "HLondon":527, "HOsaka":178, "HBerlin":176, "HBeijing":514, "HSeattle":172}
+Received RPC Call response from server
+HVancouver {"HOsaka":186, "HBerlin":176, "HBeijing":531, "HSeattle":176, "HVancouver":176, "HLondon":532}
+Received RPC request
+HVancouver {"HVancouver":177, "HLondon":532, "HOsaka":186, "HBerlin":176, "HBeijing":531, "HSeattle":176}
+Making RPC call
+HVancouver {"HSeattle":176, "HVancouver":178, "HLondon":532, "HOsaka":186, "HBerlin":176, "HBeijing":531}
+Sending response to RPC request
+HVancouver {"HSeattle":176, "HVancouver":179, "HLondon":532, "HOsaka":186, "HBerlin":176, "HBeijing":531}
+Making RPC call
+HVancouver {"HLondon":532, "HOsaka":186, "HBerlin":176, "HBeijing":531, "HSeattle":176, "HVancouver":180}
+Received RPC Call response from server
+HVancouver {"HOsaka":186, "HBerlin":181, "HBeijing":531, "HSeattle":176, "HVancouver":181, "HLondon":547}
+Received RPC request
+HVancouver {"HBerlin":181, "HBeijing":531, "HSeattle":176, "HVancouver":182, "HLondon":548, "HOsaka":186}
+Received RPC Call response from server
+HVancouver {"HLondon":548, "HOsaka":186, "HBerlin":181, "HBeijing":531, "HSeattle":176, "HVancouver":183}
+Sending response to RPC request
+HVancouver {"HVancouver":184, "HLondon":559, "HOsaka":192, "HBerlin":188, "HBeijing":549, "HSeattle":180}
+Received RPC request
+HVancouver {"HOsaka":192, "HBerlin":188, "HBeijing":549, "HSeattle":180, "HVancouver":185, "HLondon":559}
+Making RPC call
+HVancouver {"HVancouver":186, "HLondon":559, "HOsaka":192, "HBerlin":188, "HBeijing":549, "HSeattle":180}
+Sending response to RPC request
+HVancouver {"HBeijing":549, "HSeattle":180, "HVancouver":187, "HLondon":562, "HOsaka":192, "HBerlin":188}
+Received RPC Call response from server
