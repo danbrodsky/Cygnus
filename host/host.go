@@ -8,11 +8,14 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 	"github.com/DistributedClocks/GoVector/govec"
 	"github.com/DistributedClocks/GoVector/govec/vrpc"
 )
+
+const MaxTimeouts = 3
 
 type Host struct {
 	hostID string
@@ -33,7 +36,7 @@ type Host struct {
 	publicAddrClient  string
 
 	//Peer ip addresses
-	peers    map[string]bool
+	peers    map[string]*rpc.Client
 	peerLock sync.Mutex
 
 	//Client address. An empty string if there is no client
@@ -56,6 +59,12 @@ type Host struct {
 	currSeqNumberHC uint64
 	seqNumberLockHC sync.Mutex
 
+	//Failiure detection between hosts
+	failureDetectorLock sync.Mutex
+	receivedAcks map[string]map[uint64]*Ack
+	peerTimeoutsLock sync.Mutex
+	peerTimeouts map[string]uint64
+
 	govecLogger *govec.GoLog
 }
 
@@ -70,6 +79,7 @@ type HostInterface interface {
 	floodHostClientPair(pair HostClientPair)
 	sendHostClientPair(clientAddr string, hostAddr string)
 	FindHostForClient(clientAddr string, clientLocation Location) string
+	monitorNode(peer string)
 	waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string] bool, string)
 }
 
@@ -88,6 +98,42 @@ type Parameters struct {
 var(
 	GovecOptions = govec.GetDefaultLogOptions()
 )
+
+type HeartBeat struct {
+	SeqNum uint64
+	Sender string
+}
+type Ack struct {
+	HBeatSeqNum uint64
+	Sender      string
+}
+
+func (h *Host) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
+	log.Println(h.publicAddrRPC + " Received HeartBeat from " + hb.Sender + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
+
+	h.failureDetectorLock.Lock()
+	defer h.failureDetectorLock.Unlock()
+
+	ack := &Ack{HBeatSeqNum: hb.SeqNum, Sender: h.publicAddrRPC}
+	log.Println(h.publicAddrRPC + " Sending ACK to " + hb.Sender + " Seq num: " + strconv.Itoa(int(ack.HBeatSeqNum)))
+
+	client, ok := h.peers[hb.Sender]
+	if ok {
+		var reply int
+		client.Go("Host.ReceiveACK", ack, &reply, nil)
+	}
+	return nil
+}
+
+func (h *Host) ReceiveACK(ack *Ack, reply *int) error {
+	log.Println(h.publicAddrRPC + " Received ACK from " + ack.Sender + " Seq num: " + strconv.Itoa(int(ack.HBeatSeqNum)))
+
+	h.failureDetectorLock.Lock()
+	defer h.failureDetectorLock.Unlock()
+	h.receivedAcks[ack.Sender][ack.HBeatSeqNum] = ack
+	return nil
+}
+
 
 //Add peer to the peer list
 func (h *Host) RpcAddPeer(ip string, reply *int) error {
@@ -194,11 +240,10 @@ func (h *Host) notifyPeers() {
 	defer h.peerLock.Unlock()
 	for peer := range h.peers {
 		var reply int
-		client, err := vrpc.RPCDial("tcp", peer, h.govecLogger, GovecOptions)
-		if err != nil {
-			log.Println(err)
+		client, ok := h.peers[peer]
+		if ok {
+			client.Go("Host.RpcAddPeer", h.publicAddrRPC, reply, nil)
 		}
-		client.Go("Host.RpcAddPeer", h.publicAddrRPC, reply, nil)
 	}
 }
 
@@ -206,7 +251,17 @@ func (h *Host) notifyPeers() {
 func (h *Host) addPeer(ip string) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
-	h.peers[ip] = true
+
+	_, ok := h.peers[ip]
+	if !ok {
+		client, err := vrpc.RPCDial("tcp", ip, h.govecLogger, GovecOptions)
+		if err == nil {
+			h.peers[ip] = client
+			go h.monitorNode(ip)
+		} else {
+			log.Println(err)
+		}
+	}
 }
 
 //Send the host request to all peers
@@ -342,6 +397,58 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 	return respondedHosts, bestHost
 }
 
+func (h *Host) monitorNode(peer string) {
+	log.Println("Begin monitoring: " + peer)
+
+	seqNum := uint64(0)
+	h.peerTimeoutsLock.Lock()
+	h.peerTimeouts[peer] = 0
+	h.peerTimeoutsLock.Unlock()
+
+	h.failureDetectorLock.Lock()
+	h.receivedAcks[peer] = make(map[uint64]*Ack)
+	h.failureDetectorLock.Unlock()
+
+	h.peerLock.Lock()
+	client, ok := h.peers[peer]
+	h.peerLock.Unlock()
+	for ok {
+			var reply int
+			hb := &HeartBeat{SeqNum: seqNum, Sender: h.publicAddrRPC}
+
+			log.Println(h.publicAddrRPC + " Sending Heartbeat to " + peer + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
+			client.Go("Host.ReceiveHeartBeat", hb, &reply, nil)
+			time.Sleep(1 * time.Second)
+
+			h.failureDetectorLock.Lock()
+			_, ok := h.receivedAcks[peer][seqNum]
+			if ok {
+				h.peerTimeoutsLock.Lock()
+				h.peerTimeouts[peer] = 0
+				h.peerTimeoutsLock.Unlock()
+			} else {
+				h.peerTimeoutsLock.Lock()
+				timeoutCount := h.peerTimeouts[peer] + 1
+				h.peerTimeouts[peer] = timeoutCount
+				h.peerTimeoutsLock.Unlock()
+				if timeoutCount >= MaxTimeouts {
+					h.failureDetectorLock.Unlock()
+					break
+				}
+			}
+			h.failureDetectorLock.Unlock()
+			seqNum += 1
+	}
+	h.peerLock.Lock()
+	for p := range h.peers {
+		if p == peer {
+			log.Println(h.publicAddrRPC + " PEER FAILED: " + p)
+			delete(h.peers, peer)
+		}
+	}
+	h.peerLock.Unlock()
+}
+
 //Calculate distance between two coordinates
 func distance(location1 Location, location2 Location) float64 {
 	radiansLat1 := toRadians(location1.Latitude)
@@ -388,7 +495,7 @@ func Initialize(paramsPath string) (*Host) {
 
 	h.govecLogger = govec.InitGoVector(params.HostID, "./logs/" + params.HostID, govec.GetDefaultConfig())
 
-	h.peers = make(map[string]bool)
+	h.peers = make(map[string]*rpc.Client)
 	h.peerLock = sync.Mutex{}
 	h.clientLock = sync.Mutex{}
 
@@ -401,6 +508,11 @@ func Initialize(paramsPath string) (*Host) {
 	h.seqNumberLockHR = sync.Mutex{}
 	h.currSeqNumberHC = 0
 	h.seqNumberLockHC = sync.Mutex{}
+
+	h.failureDetectorLock = sync.Mutex{}
+	h.receivedAcks = make(map[string]map[uint64]*Ack)
+	h.peerTimeoutsLock = sync.Mutex{}
+	h.peerTimeouts = make(map[string]uint64)
 
 	for _, peer := range params.PeerHosts {
 		h.addPeer(peer)
