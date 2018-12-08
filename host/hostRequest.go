@@ -16,6 +16,7 @@ type HostRequest struct {
 	BestHostLocation	Location
 	RequestingHost 		string
 	BestHost			string
+	RespondingHost		string
 }
 
 type HostClientPair struct {

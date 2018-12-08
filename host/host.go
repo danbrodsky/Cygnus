@@ -15,6 +15,8 @@ import (
 )
 
 type Host struct {
+	hostID string
+
 	//Location of the host
 	location Location
 
@@ -46,9 +48,13 @@ type Host struct {
 	seenPairings     map[HostClientPair]bool
 	seenPairingsLock sync.Mutex
 
-	//Sequence number for messages being flooded
-	currSeqNumber uint64
-	seqNumberLock sync.Mutex
+	//Sequence number for hostRequest messages being flooded
+	currSeqNumberHR uint64
+	seqNumberLockHR sync.Mutex
+
+	//Sequence number for host-client pair messages being flooded
+	currSeqNumberHC uint64
+	seqNumberLockHC sync.Mutex
 
 	govecLogger *govec.GoLog
 }
@@ -64,7 +70,7 @@ type HostInterface interface {
 	floodHostClientPair(pair HostClientPair)
 	sendHostClientPair(clientAddr string, hostAddr string)
 	FindHostForClient(clientAddr string, clientLocation Location) string
-	waitForBestHost(addr string, clientLocation Location, seqNum uint64) string
+	waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string] bool, string)
 }
 
 type Parameters struct {
@@ -98,7 +104,7 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 	//If we haven't seen the message before, check if we are the host that is being paired
 	if !ok {
 		if pair.Host == h.publicAddrClient {
-			//Only accept we are currently available
+			//Only accept if we are currently available
 			h.clientLock.Lock()
 			if h.clientAddr == "" {
 				h.clientAddr = pair.Client
@@ -127,12 +133,20 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 		available := h.clientAddr == ""
 		h.clientLock.Unlock()
 
-		sendResponse := func() {
-			hostRequest.BestHost = h.publicAddrClient
-			hostRequest.BestHostLocation = h.location
+		sendResponse := func(isBest bool) {
+			messageToSend := hostRequest
+			if isBest {
+				messageToSend.BestHost = h.publicAddrClient
+				messageToSend.BestHostLocation = h.location
+				hostRequest = messageToSend
+			} else {
+				messageToSend.BestHost = ""
+				messageToSend.BestHostLocation = Location{}
+			}
+			messageToSend.RespondingHost = h.hostID
 			conn, err := net.Dial("udp", hostRequest.RequestingHost)
 			if err == nil {
-				b, err := marshallHostRequest(hostRequest)
+				b, err := marshallHostRequest(messageToSend)
 				if err == nil {
 					conn.Write(b)
 				}
@@ -145,14 +159,18 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 		if available {
 			//If there is no host in the request right now
 			if hostRequest.BestHost == "" {
-				sendResponse()
+				sendResponse(true)
 			} else {
 				currentBestDistance := distance(hostRequest.ClientLocation, hostRequest.BestHostLocation)
 				hostDistance := distance(hostRequest.ClientLocation, h.location)
 				if hostDistance < currentBestDistance {
-					sendResponse()
+					sendResponse(true)
+				} else {
+					sendResponse(false)
 				}
 			}
+		} else {
+			sendResponse(false)
 		}
 		h.floodHostRequest(args.Sender, hostRequest)
 	}
@@ -168,14 +186,6 @@ func (h *Host) setUpMessageRPC() {
 		log.Fatal("listen error:", e)
 	}
 	go vrpc.ServeRPCConn(handler, l, h.govecLogger, GovecOptions)
-	/*go func() {
-		for {
-			con, e := l.Accept()
-			if e == nil {
-				go handler.ServeConn(con)
-			}
-		}
-	}()*/
 }
 
 //Notify peers that this host has joined
@@ -221,9 +231,10 @@ func (h *Host) floodHostRequest(sender string, hostRequest HostRequest) {
 func (h *Host) floodHostClientPair(pair HostClientPair) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
+
 	for peer := range h.peers {
 		var reply int
-		client, err := rpc.Dial("tcp", peer)
+		client, err := vrpc.RPCDial("tcp", peer, h.govecLogger, GovecOptions)
 		if err != nil {
 			log.Println(err)
 		}
@@ -233,11 +244,10 @@ func (h *Host) floodHostClientPair(pair HostClientPair) {
 
 //After consensus is done for the client-host pairing, call this function to send the pairing to all hosts
 func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) {
-	h.seqNumberLock.Lock()
-	seqNum := h.currSeqNumber
-	h.currSeqNumber++
-	h.seqNumberLock.Unlock()
-
+	h.seqNumberLockHC.Lock()
+	seqNum := h.currSeqNumberHC
+	h.currSeqNumberHC++
+	h.seqNumberLockHC.Unlock()
 	pair := HostClientPair{
 		SequenceNumber: seqNum,
 		Client: clientAddr,
@@ -248,17 +258,19 @@ func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) {
 //Will either return the ip of the best host, or an empty string if there are no hosts
 //TODO: this method probably doesn't need to be capitalized. Only is capitalize right now for testing purposes
 func (h *Host) FindHostForClient(clientAddr string, clientLocation Location) string {
-	h.seqNumberLock.Lock()
-	seqNum := h.currSeqNumber
-	h.currSeqNumber++
-	h.seqNumberLock.Unlock()
+	h.seqNumberLockHR.Lock()
+	seqNum := h.currSeqNumberHR
+	h.currSeqNumberHR++
+	h.seqNumberLockHR.Unlock()
 
 	hostRequest := HostRequest{
 		SequenceNumber: seqNum,
 		ClientLocation: clientLocation,
 		RequestingHost: h.publicAddrUDP}
 	h.floodHostRequest(h.publicAddrRPC, hostRequest)
-	bestHost := h.waitForBestHost(h.privateAddrUDP, clientLocation, seqNum)
+	respondedHosts, bestHost := h.waitForBestHost(h.privateAddrUDP, clientLocation, seqNum)
+
+	log.Println(respondedHosts) //Array of host IDs that responded to the flooded request
 
 	//TODO: Check that there actually is a best host (bestHost != "")
 	//TODO: Do consensus before we send the best client-host pair to everyone
@@ -269,7 +281,7 @@ func (h *Host) FindHostForClient(clientAddr string, clientLocation Location) str
 }
 
 //Wait for hosts to respond. Then choose the best host
-func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint64) string {
+func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string] bool, string) {
 	bestHost := ""
 	bestHostLocation := Location{}
 	currentBestDistance := float64(0)
@@ -294,9 +306,11 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 	}
 	defer l.Close()
 
-	//Only wait for three second
+	//Only wait for three seconds
 	timeoutTime := time.Now().Add(time.Second * 3)
 	l.SetReadDeadline(timeoutTime)
+
+	respondedHosts := make(map[string] bool)
 
 	for time.Now().Before(timeoutTime) {
 		buffer := make([]byte, 1024)
@@ -320,10 +334,12 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 						currentBestDistance = distance(clientLocation, bestHostLocation)
 					}
 				}
+				respondedHosts[hostRequest.RespondingHost] = true
 			}
 		}
 	}
-	return bestHost
+
+	return respondedHosts, bestHost
 }
 
 //Calculate distance between two coordinates
@@ -361,6 +377,7 @@ func Initialize(paramsPath string) (*Host) {
 	log.Println(params)
 
 	h := &Host{}
+	h.hostID = params.HostID
 	h.privateAddrRPC = concatIp(params.HostPrivateIP, params.HostsPortRPC)
 	h.publicAddrRPC = concatIp(params.HostPublicIP, params.HostsPortRPC)
 	h.privateAddrUDP = concatIp(params.HostPrivateIP, params.HostsPortUDP)
@@ -380,8 +397,10 @@ func Initialize(paramsPath string) (*Host) {
 	h.seenPairings = make(map[HostClientPair]bool)
 	h.seenPairingsLock = sync.Mutex{}
 
-	h.currSeqNumber = 0
-	h.seqNumberLock = sync.Mutex{}
+	h.currSeqNumberHR = 0
+	h.seqNumberLockHR = sync.Mutex{}
+	h.currSeqNumberHC = 0
+	h.seqNumberLockHC = sync.Mutex{}
 
 	for _, peer := range params.PeerHosts {
 		h.addPeer(peer)

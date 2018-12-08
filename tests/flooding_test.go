@@ -3,6 +3,7 @@ package tests
 import (
 	"../host"
 	"testing"
+	"time"
 )
 
 /*
@@ -17,7 +18,7 @@ If any of the messages are lost, the test will fail. This is expected behaviour.
 func TestFlooding(t *testing.T) {
 	host.Initialize("../parameters/parameters1.json") //Vancouver
 	host.Initialize("../parameters/parameters2.json") //Berlin
-	host.Initialize("../parameters/parameters3.json") //London
+	host3 := host.Initialize("../parameters/parameters3.json") //London
 	host.Initialize("../parameters/parameters4.json") //Beijing
 	host5 := host.Initialize("../parameters/parameters5.json") //Osaka
 	host.Initialize("../parameters/parameters6.json") //Seattle
@@ -29,33 +30,28 @@ func TestFlooding(t *testing.T) {
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
-	/*
-	host5.FindHostForClient(clientLocation, &foundHost)
 
 	//Allow some time for the best host to be flooded to the network
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1 * time.Second)
+
+	//Client is in Tokyo. Should be closes to the host in Osaka
+	clientLocation = host.Location{Latitude: 35.689487, Longitude: 139.691711}
+	expectedHost = "127.0.0.1:9000"
+	foundHost = host3.FindHostForClient("127.0.0.1:5052", clientLocation)
+	if foundHost != expectedHost {
+		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
+	}
+
+	time.Sleep(1 * time.Second)
 
 	//Find a host for another client in Richmond.
 	//Since the host with Vancouver is already taken, it should find the host in Seattle
+	clientLocation = host.Location{Latitude: 49.166592, Longitude: -123.133568}
 	expectedHost = "127.0.0.1:4000"
 	foundHost = host5.FindHostForClient("127.0.0.1:5051", clientLocation)
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
 
-	//Client is in Tokyo. Should be closes to the host in Osaka
-	clientLocation = host.Location{Latitude: 35.689487, Longitude: 139.691711}
-	expectedHost = "127.0.0.1:9000"
-	foundHost = host4.FindHostForClient("127.0.0.1:5052", clientLocation)
-	if foundHost != expectedHost {
-		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
-	}
-
-	host4.FindHostForClient(clientLocation2, &foundHost)
-        if foundHost != expectedHost2 {
-                t.Errorf("Expected %s, got %s", expectedHost2, foundHost)
-        }
-	*/
-
-
+	time.Sleep(1 * time.Second)
 }
