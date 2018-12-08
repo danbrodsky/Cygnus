@@ -28,7 +28,7 @@ func main() {
 	Resolution = "1920x1080"
 	Display = ":0"
 	Framerate = "60"
-	SdpFileName = "test.sdp"
+	SdpFileName = "StreamConfig.sdp"
 
 	go ReceiveHostStream()
 	go ReceiveInputFromClient()
@@ -84,7 +84,7 @@ type InputEvent struct {
 func GrabInput(c chan InputEvent) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // calling cancel() kills the exec command
-	xevCommand := exec.CommandContext(ctx, "xev", "-display", Display)
+	xevCommand := exec.CommandContext(ctx, "xinput", "test-xi2", "--root")
 	stdout, err := xevCommand.StdoutPipe()
 	xevCommand.Start()
 
@@ -111,18 +111,12 @@ func SendStreamToClient() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // calling cancel() kills the exec command
 	ffmpegCommand := exec.CommandContext(ctx, "ffmpeg", "-f", "x11grab",
-		"-s", Resolution, "-i", Display, "-threads", "6", "-r", Framerate,
+		"-s", Resolution, "-i", Display, "-threads", "4", "-r", Framerate,
 		"-vcodec", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-crf",
 		"51", "-b:v", "8000k", "-f", "rtp", "rtp://"+ClientIpPort)
-	stderr, err := ffmpegCommand.StderrPipe()
+	_, err := ffmpegCommand.StderrPipe()
 	ffmpegCommand.Start()
 
-	scanner := bufio.NewScanner(stderr)
-	scanner.Split(bufio.ScanWords)
-	for scanner.Scan() {
-		m := scanner.Text()
-		fmt.Println(m)
-	}
 	ffmpegCommand.Wait()
 	if err != nil {
 		log.Fatal(err)
