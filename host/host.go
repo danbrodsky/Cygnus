@@ -268,16 +268,12 @@ func (h *Host) addPeer(ip string) {
 func (h *Host) floodHostRequest(sender string, hostRequest HostRequest) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
-	for peer := range h.peers {
+	for peer, client := range h.peers {
 		if peer != sender {
 			var reply int
 			hostRequestWithSender := HostRequestWithSender{
 				Sender: h.publicAddrRPC,
 				Request: hostRequest}
-			client, err := vrpc.RPCDial("tcp", peer, h.govecLogger, GovecOptions)
-			if err != nil {
-				log.Println(err)
-			}
 			client.Go("Host.ReceiveHostRequest", hostRequestWithSender, reply, nil)
 		}
 	}
@@ -287,12 +283,8 @@ func (h *Host) floodHostClientPair(pair HostClientPair) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
 
-	for peer := range h.peers {
+	for _, client := range h.peers {
 		var reply int
-		client, err := vrpc.RPCDial("tcp", peer, h.govecLogger, GovecOptions)
-		if err != nil {
-			log.Println(err)
-		}
 		client.Go("Host.ReceivePair", pair, reply, nil)
 	}
 }
