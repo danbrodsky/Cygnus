@@ -24,12 +24,54 @@ type HostClientPair struct {
 	SequenceNumber		uint64
 	Client				string
 	Host				string
+	SendingHost 		string
+}
+
+type PairAck struct {
+	SequenceNumber 	uint64
+	TargetHost 		string
+	Accept			bool
+}
+
+type HeartBeat struct {
+	SeqNum uint64
+	Sender string
+}
+type Ack struct {
+	HBeatSeqNum uint64
+	Sender      string
 }
 
 type Location struct {
 	Latitude  float64
 	Longitude float64
 }
+
+type VerificationMesssage struct {
+        ClientId string
+        ReturnIp string
+}
+
+type DecisionMessage struct{
+        HostId string
+        Decision bool
+}
+
+type Parameters struct {
+        HostLatitude      float64  `json:"HostLatitude"`
+        HostLongitude     float64  `json:"HostLongitude"`
+        HostID            string   `json:"HostID"`
+        PeerHosts         []string `json:"PeerHosts"`
+        HostPublicIP      string   `json:"HostPublicIP"`
+        HostPrivateIP     string   `json:"HostPrivateIP"`
+        AcceptClientsPort string   `json:"AcceptClientsPort"`
+        HostsPortRPC      string   `json:"HostsPortRPC"`
+        HostsPortUDP      string   `json:"HostsPortUDP"`
+        VerificationPortUDP      string   `json:"VerificationPortUDP"`
+        VerificationReturnPortUDP string `json:"VerificationReturnPortUDP"`
+        BlackList         []string  `json:"BlackList"`
+}
+
 
 func marshallHostRequest(hb HostRequest) ([]byte, error) {
 	var network bytes.Buffer

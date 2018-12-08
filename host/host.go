@@ -2,6 +2,8 @@ package host
 
 import (
 	"encoding/json"
+	"github.com/DistributedClocks/GoVector/govec"
+	"github.com/DistributedClocks/GoVector/govec/vrpc"
 	"io/ioutil"
 	"log"
 	"math"
@@ -13,8 +15,6 @@ import (
 	"time"
 	"bytes"
 	"encoding/gob"
-	"github.com/DistributedClocks/GoVector/govec"
-	"github.com/DistributedClocks/GoVector/govec/vrpc"
 )
 
 const MaxTimeouts = 3
@@ -48,19 +48,20 @@ type Host struct {
 	blackList []string
 
 	//Peer ip addresses
-	peers    map[string]*rpc.Client
+	peers map[string]*rpc.Client
 	peerLock sync.Mutex
 
 	//Client address. An empty string if there is no client
 	clientAddr string
+	clientConnected bool
 	clientLock sync.Mutex
 
 	//Seen host requests (prevent endless looping during flooding)
-	seenHostRequests     map[HostRequest]bool
+	seenHostRequests map[HostRequest]bool
 	seenHostRequestsLock sync.Mutex
 
 	//Seen host-client pairings (prevent endless looping during flooding)
-	seenPairings     map[HostClientPair]bool
+	seenPairings map[HostClientPair]bool
 	seenPairingsLock sync.Mutex
 
 	//Sequence number for hostRequest messages being flooded
@@ -71,7 +72,12 @@ type Host struct {
 	currSeqNumberHC uint64
 	seqNumberLockHC sync.Mutex
 
-	//Failiure detection between hosts
+	//Used to wait for ack responses to the client-host pairs sent out by this host
+	ackWaitChan map[uint64]chan bool
+	seenPairAcks map[PairAck] bool
+	pairAcksLock  sync.Mutex
+
+	//Failure detection between hosts
 	failureDetectorLock sync.Mutex
 	receivedAcks map[string]map[uint64]*Ack
 	peerTimeoutsLock sync.Mutex
@@ -81,58 +87,29 @@ type Host struct {
 }
 
 type HostInterface interface {
+	ReceiveHeartBeat(hb *HeartBeat, reply *int) error
+	ReceiveACK(ack *Ack, reply *int) error
 	RpcAddPeer(ip string, reply *int) error
+	ReceivePairAck(pair PairAck, reply *int) error
 	ReceivePair(pair HostClientPair, reply *int) error
 	ReceiveHostRequest(args HostRequestWithSender, reply *int) error
 	setUpMessageRPC()
 	notifyPeers()
 	addPeer(ip string)
+	floodPairAck(pairAck PairAck)
 	floodHostRequest(sender string, hostRequest HostRequest)
 	floodHostClientPair(pair HostClientPair)
-	sendHostClientPair(clientAddr string, hostAddr string)
+	sendHostClientPair(clientAddr string, hostAddr string) bool
 	FindHostForClient(clientAddr string, clientLocation Location) string
 	monitorNode(peer string)
 	waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string] bool, string)
-}
-
-type Parameters struct {
-	HostLatitude      float64  `json:"HostLatitude"`
-	HostLongitude     float64  `json:"HostLongitude"`
-	HostID            string   `json:"HostID"`
-	PeerHosts         []string `json:"PeerHosts"`
-	HostPublicIP      string   `json:"HostPublicIP"`
-	HostPrivateIP     string   `json:"HostPrivateIP"`
-	AcceptClientsPort string   `json:"AcceptClientsPort"`
-	HostsPortRPC      string   `json:"HostsPortRPC"`
-	HostsPortUDP      string   `json:"HostsPortUDP"`
-	VerificationPortUDP      string   `json:"VerificationPortUDP"`
-	VerificationReturnPortUDP string `json:"VerificationReturnPortUDP"`
-	BlackList         []string  `json:"BlackList"`
 }
 
 var(
 	GovecOptions = govec.GetDefaultLogOptions()
 )
 
-type HeartBeat struct {
-	SeqNum uint64
-	Sender string
-}
-type Ack struct {
-	HBeatSeqNum uint64
-	Sender      string
-}
-
-type VerificationMesssage struct {
-	ClientId string
-	ReturnIp string
-}
-
-type DecisionMessage struct{
-	HostId string
-	Decision bool
-}
-
+//Receive a heart beat from another host
 func (h *Host) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
 	//log.Println(h.publicAddrRPC + " Received HeartBeat from " + hb.Sender + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
 
@@ -150,6 +127,7 @@ func (h *Host) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
 	return nil
 }
 
+//Receive an ack from another host
 func (h *Host) ReceiveACK(ack *Ack, reply *int) error {
 	//log.Println(h.publicAddrRPC + " Received ACK from " + ack.Sender + " Seq num: " + strconv.Itoa(int(ack.HBeatSeqNum)))
 
@@ -160,12 +138,30 @@ func (h *Host) ReceiveACK(ack *Ack, reply *int) error {
 }
 
 
-//Add peer to the peer list
+//Add peer to this host's peer list
 func (h *Host) RpcAddPeer(ip string, reply *int) error {
 	h.addPeer(ip)
 	return nil
 }
 
+//Receive an acknowledgement for a client-host pairing
+func (h *Host) ReceivePairAck(pairAck PairAck, reply *int) error {
+	h.pairAcksLock.Lock()
+	defer h.pairAcksLock.Unlock()
+
+	_, ok := h.seenPairAcks[pairAck]
+	if !ok {
+		if pairAck.TargetHost == h.publicAddrRPC {
+			h.ackWaitChan[pairAck.SequenceNumber] <- pairAck.Accept
+		} else {
+			h.floodPairAck(pairAck)
+		}
+		h.seenPairAcks[pairAck] = true
+	}
+	return nil
+}
+
+//Receive a client-host pairing
 func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 	h.seenPairingsLock.Lock()
 	_, ok := h.seenPairings[pair]
@@ -175,14 +171,46 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 	//If we haven't seen the message before, check if we are the host that is being paired
 	if !ok {
 		if pair.Host == h.publicAddrClient {
-			//Only accept if we are currently available
 			h.clientLock.Lock()
+			var pairAck PairAck
+
+			//Only accept if we are currently available
 			if h.clientAddr == "" {
 				h.clientAddr = pair.Client
+				h.clientConnected = false
+
+				//Will send an ack indicating that the pairing was accepted
+				pairAck = PairAck{
+					SequenceNumber: pair.SequenceNumber,
+					TargetHost: pair.SendingHost,
+					Accept: true,
+				}
+			} else {
+				//Will send an ack indicating that the pairing was rejected
+				pairAck = PairAck{
+					SequenceNumber: pair.SequenceNumber,
+					TargetHost: pair.SendingHost,
+					Accept: false,
+				}
 			}
 			h.clientLock.Unlock()
 
-			//TODO: Put some sort of timeout. Don't want the host to wait forever if the client never connects
+			//Flood the ack to everyone and mark it as seen
+			h.pairAcksLock.Lock()
+			h.seenPairAcks[pairAck] = true
+			h.pairAcksLock.Unlock()
+			go h.floodPairAck(pairAck)
+
+			//If no client connects after 1 minute, reset the client address
+			//Don't wait forever for the client
+			go func() {
+				time.Sleep(1 * time.Minute)
+				h.clientLock.Lock()
+				if !h.clientConnected {
+					h.clientAddr = ""
+				}
+				h.clientLock.Unlock()
+			}()
 		} else {
 			//Flood pairing to peers
 			h.floodHostClientPair(pair)
@@ -290,6 +318,17 @@ func (h *Host) addPeer(ip string) {
 	}
 }
 
+//Send the pair ack to all peers
+func (h *Host) floodPairAck(pairAck PairAck) {
+	h.peerLock.Lock()
+	defer h.peerLock.Unlock()
+
+	for _, client := range h.peers {
+		var reply int
+		client.Go("Host.ReceivePairAck", pairAck, reply, nil)
+	}
+}
+
 //Send the host request to all peers
 func (h *Host) floodHostRequest(sender string, hostRequest HostRequest) {
 	h.peerLock.Lock()
@@ -305,6 +344,7 @@ func (h *Host) floodHostRequest(sender string, hostRequest HostRequest) {
 	}
 }
 
+//Send the client host pair to all peers
 func (h *Host) floodHostClientPair(pair HostClientPair) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
@@ -317,16 +357,37 @@ func (h *Host) floodHostClientPair(pair HostClientPair) {
 
 
 //After consensus is done for the client-host pairing, call this function to send the pairing to all hosts
-func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) {
+func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) bool {
 	h.seqNumberLockHC.Lock()
 	seqNum := h.currSeqNumberHC
 	h.currSeqNumberHC++
 	h.seqNumberLockHC.Unlock()
+
+	//Create the client host pair to flood to the network & mark it as seen
 	pair := HostClientPair{
 		SequenceNumber: seqNum,
 		Client: clientAddr,
-		Host: hostAddr}
-	h.floodHostClientPair(pair)
+		Host: hostAddr,
+		SendingHost: h.publicAddrRPC}
+	h.seenPairingsLock.Lock()
+	h.seenPairings[pair] = true
+	h.seenPairingsLock.Unlock()
+
+	//Make a wait chan, so we can wait until the client host pair has be acked by the chosen host
+	h.pairAcksLock.Lock()
+	waitChan := make(chan bool, 2)
+	h.ackWaitChan[seqNum] = waitChan
+	h.pairAcksLock.Unlock()
+
+	//Only wait five seconds for an acknowledgement (in case other host has failed)
+	go func() {
+		time.Sleep(5 * time.Second)
+		waitChan <- false
+	}()
+
+	//Flood pair to the network, then wait for acknowledgement
+	go h.floodHostClientPair(pair)
+	return <- waitChan
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -444,10 +505,16 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 	h.currSeqNumberHR++
 	h.seqNumberLockHR.Unlock()
 
+	//Create the host request and mark it as seen
 	hostRequest := HostRequest{
 		SequenceNumber: seqNum,
 		ClientLocation: clientLocation,
 		RequestingHost: h.publicAddrUDP}
+	h.seenHostRequestsLock.Lock()
+	h.seenHostRequests[hostRequest] = true
+	h.seenHostRequestsLock.Unlock()
+
+	//Flood to network then wait for responses
 	h.floodHostRequest(h.publicAddrRPC, hostRequest)
 	respondedHosts, bestHost := h.waitForBestHost(h.privateAddrUDP, clientLocation, seqNum)
 
@@ -458,16 +525,22 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 		log.Println("Client:", clientId ,"Network Decision:", decision)
 	}
 
+	if(!decision){
+                return "-1.-1.-1.-1"
+        }
 	//TODO: Check that there actually is a best host (bestHost != "")
 
 	//Flood the best client-host pairing
 	h.sendHostClientPair(clientAddr, bestHost)
-
-	if(decision){
-		return bestHost
-	} else{
-		return "-1.-1.-1.-1"
+	accept := h.sendHostClientPair(clientAddr, bestHost)
+	if accept {
+		log.Println("Host: " + bestHost + " has agreed to accept client " + clientAddr)
+	} else {
+		log.Println("Host: " + bestHost + " has won't accept client " + clientAddr)
 	}
+	//TODO: Do something with the return of 'accept'. If the target host doesn't accept, find another one?
+
+	return bestHost
 }
 
 //Wait for hosts to respond. Then choose the best host
@@ -532,6 +605,7 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 	return respondedHosts, bestHost
 }
 
+//Monitor a host node
 func (h *Host) monitorNode(peer string) {
 	//log.Println("Begin monitoring: " + peer)
 
@@ -575,7 +649,7 @@ func (h *Host) monitorNode(peer string) {
 			seqNum += 1
 	}
 	h.peerLock.Lock()
-	log.Println(h.publicAddrRPC + " PEER FAILED: " + peer)
+	log.Println(h.hostID + "- peer has failed: " + peer)
 	delete(h.peers, peer)
 	h.peerLock.Unlock()
 }
@@ -705,6 +779,10 @@ func Initialize(paramsPath string) (*Host) {
 	h.receivedAcks = make(map[string]map[uint64]*Ack)
 	h.peerTimeoutsLock = sync.Mutex{}
 	h.peerTimeouts = make(map[string]uint64)
+
+	h.ackWaitChan = make(map[uint64]chan bool)
+	h.seenPairAcks = make(map[PairAck] bool)
+	h.pairAcksLock  = sync.Mutex{}
 
 	for _, peer := range params.PeerHosts {
 		h.addPeer(peer)

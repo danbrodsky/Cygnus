@@ -3,7 +3,6 @@ package tests
 import (
 	"../host"
 	"testing"
-	"time"
 )
 
 /*
@@ -31,9 +30,6 @@ func TestFlooding(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
 
-	//Allow some time for the best host to be flooded to the network
-	time.Sleep(1 * time.Second)
-
 	//Client is in Tokyo. Should be closes to the host in Osaka
 	clientLocation = host.Location{Latitude: 35.689487, Longitude: 139.691711}
 	expectedHost = "127.0.0.1:9000"
@@ -41,8 +37,6 @@ func TestFlooding(t *testing.T) {
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
-
-	time.Sleep(1 * time.Second)
 
 	//Find a host for another client in Richmond.
 	//Since the host with Vancouver is already taken, it should find the host in Seattle
@@ -52,6 +46,4 @@ func TestFlooding(t *testing.T) {
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
-
-	time.Sleep(1 * time.Second)
 }
