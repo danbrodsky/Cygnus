@@ -440,12 +440,8 @@ func (h *Host) monitorNode(peer string) {
 			seqNum += 1
 	}
 	h.peerLock.Lock()
-	for p := range h.peers {
-		if p == peer {
-			log.Println(h.publicAddrRPC + " PEER FAILED: " + p)
-			delete(h.peers, peer)
-		}
-	}
+	log.Println(h.publicAddrRPC + " PEER FAILED: " + peer)
+	delete(h.peers, peer)
 	h.peerLock.Unlock()
 }
 
