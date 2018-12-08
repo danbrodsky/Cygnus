@@ -531,12 +531,11 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 	//TODO: Check that there actually is a best host (bestHost != "")
 
 	//Flood the best client-host pairing
-	h.sendHostClientPair(clientAddr, bestHost)
 	accept := h.sendHostClientPair(clientAddr, bestHost)
 	if accept {
-		log.Println("Host: " + bestHost + " has agreed to accept client " + clientAddr)
+		log.Println("Host " + bestHost + " has agreed to accept client " + clientAddr)
 	} else {
-		log.Println("Host: " + bestHost + " has won't accept client " + clientAddr)
+		log.Println("Host " + bestHost + " won't accept client " + clientAddr)
 	}
 	//TODO: Do something with the return of 'accept'. If the target host doesn't accept, find another one?
 
