@@ -1,10 +1,8 @@
 {
-  "HostLatitude" : 47.606209,
-  "HostLongitude" : -122.332069,
   "HostID" : "HSeattle",
-  "PeerHosts" : ["127.0.0.1:8001"],
-  "HostPublicIP" : "127.0.0.1",
-  "HostPrivateIP" : "127.0.0.1",
+  "PeerHosts" : ["13.77.176.89:8001"],
+  "HostPublicIP" : "13.77.176.89",
+  "HostPrivateIP" : "10.0.0.4",
   "AcceptClientsPort": "4000",
   "HostsPortRPC": "4001",
   "HostsPortUDP": "4002",

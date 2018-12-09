@@ -1,10 +1,8 @@
 {
-  "HostLatitude" : 49.282730,
-  "HostLongitude" : -123.120735,
   "HostID" : "HVancouver",
   "PeerHosts" : [],
-  "HostPublicIP" : "127.0.0.1",
-  "HostPrivateIP" : "127.0.0.1",
+  "HostPublicIP" : "13.77.176.89",
+  "HostPrivateIP" : "10.0.0.4",
   "AcceptClientsPort": "5000",
   "HostsPortRPC": "5001",
   "HostsPortUDP": "5002",

@@ -1,10 +1,8 @@
 {
-  "HostLatitude" : 39.904202,
-  "HostLongitude" : 116.407394,
   "HostID" : "HBeijing",
-  "PeerHosts" : ["127.0.0.1:7001"],
-  "HostPublicIP" : "127.0.0.1",
-  "HostPrivateIP" : "127.0.0.1",
+  "PeerHosts" : ["13.77.176.89:7001"],
+  "HostPublicIP" : "13.77.176.89",
+  "HostPrivateIP" : "10.0.0.4",
   "AcceptClientsPort": "8000",
   "HostsPortRPC": "8001",
   "HostsPortUDP": "8002",

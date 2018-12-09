@@ -48,11 +48,6 @@ type Ack struct {
 	Sender      string
 }
 
-type Location struct {
-	Latitude  float64
-	Longitude float64
-}
-
 type VerificationMesssage struct {
         ClientId string
         ReturnIp string
@@ -64,8 +59,6 @@ type DecisionMessage struct{
 }
 
 type Parameters struct {
-        HostLatitude      float64  `json:"HostLatitude"`
-        HostLongitude     float64  `json:"HostLongitude"`
         HostID            string   `json:"HostID"`
         PeerHosts         []string `json:"PeerHosts"`
         HostPublicIP      string   `json:"HostPublicIP"`

@@ -9,7 +9,6 @@ import (
 	"github.com/sparrc/go-ping"
 	"io/ioutil"
 	"log"
-	"math"
 	"net"
 	"net/rpc"
 	"os"
@@ -24,9 +23,6 @@ const DEBUG_CONSENSUS_PROPOSER = true
 
 type Host struct {
 	hostID string
-
-	//Location of the host
-	location Location
 
 	// public ip of host
 	publicIp string
@@ -45,7 +41,8 @@ type Host struct {
 
 	//Used to recieve consensus connection
 	publicVerificationPortIp string
-	publicVerificationReturnPortIp string
+	privateVerificationPortIp string
+	privateVerificationReturnPortIp string
 	blackList []string
 
 	//Peer ip addresses
@@ -101,9 +98,9 @@ type HostInterface interface {
 	floodHostRequest(sender string, hostRequest HostRequest)
 	floodHostClientPair(pair HostClientPair)
 	sendHostClientPair(clientAddr string, hostAddr string) bool
-	FindHostForClient(clientAddr string, clientLocation Location) string
+	FindHostForClient(clientAddr string) string
 	monitorNode(peer string)
-	waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string] bool, string)
+	waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string] bool, string)
 }
 
 var(
@@ -261,7 +258,6 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 				pinger.Count = 3
 				pinger.Run()
 				stats := pinger.Statistics()
-				log.Println(stats.AvgRtt)
 				sendResponse(stats.AvgRtt, h.publicAddrClient)
 			} else {
 				sendResponse(time.Duration(-1), "")
@@ -394,7 +390,7 @@ func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) bool {
 
 // Ask hosts that responded to the flooding for agreement to accept client
 func (h *Host) askForAgreement(clientId string,respondedHosts map[string]string) bool{
-	conn,err := getConnection(h.publicVerificationReturnPortIp)
+	conn,err := getConnection(h.privateVerificationReturnPortIp)
 	if err != nil {
                 log.Fatal(err)
         }
@@ -498,7 +494,7 @@ func getConnection(ip string) (conn *net.UDPConn, err error) {
 
 //Will either return the ip of the best host, or an empty string if there are no hosts
 //TODO: this method probably doesn't need to be capitalized. Only is capitalize right now for testing purposes
-func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocation Location) string {
+func (h *Host) FindHostForClient(clientId string, clientAddr string) string {
 	h.seqNumberLockHR.Lock()
 	seqNum := h.currSeqNumberHR
 	h.currSeqNumberHR++
@@ -556,7 +552,6 @@ func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (m
 			pinger.Run()
 			stats := pinger.Statistics()
 			bestHostTime = stats.AvgRtt
-			log.Println(stats.AvgRtt)
 			bestHostAddr = h.publicAddrClient
 		} else {
 			log.Println(err)
@@ -575,8 +570,8 @@ func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (m
 	}
 	defer l.Close()
 
-	//Only wait for three seconds
-	timeoutTime := time.Now().Add(time.Second * 3)
+	//Only wait for five seconds
+	timeoutTime := time.Now().Add(time.Second * 5)
 	l.SetReadDeadline(timeoutTime)
 
 	respondedHosts := make(map[string]string)
@@ -659,20 +654,6 @@ func (h *Host) monitorNode(peer string) {
 	h.peerLock.Unlock()
 }
 
-//Calculate distance between two coordinates
-func distance(location1 Location, location2 Location) float64 {
-	radiansLat1 := toRadians(location1.Latitude)
-	radiansLat2 := toRadians(location2.Latitude)
-	diffLat := toRadians(location2.Latitude - location1.Latitude)
-	diffLong := toRadians(location2.Longitude - location1.Longitude)
-
-	var a = math.Sin(diffLat/2)*math.Sin(diffLat/2) + math.Cos(radiansLat1)*math.Cos(radiansLat2)*math.Sin(diffLong/2)*math.Sin(diffLong/2)
-	return 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-}
-
-func toRadians(value float64) float64 {
-	return value * math.Pi / 180
-}
 
 func concatIp(ip string, port string) string {
 	return ip + ":" + port
@@ -681,7 +662,7 @@ func concatIp(ip string, port string) string {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //CONSENSES ACCPETOR METHODS
 func (h *Host) handleVerificationRequests(){
-	conn, err := getConnection(h.publicVerificationPortIp)
+	conn, err := getConnection(h.privateVerificationPortIp)
 	if err != nil {
                 log.Fatal(err)
         }
@@ -759,10 +740,10 @@ func Initialize(paramsPath string) (*Host) {
 	h.publicAddrUDP = concatIp(params.HostPublicIP, params.HostsPortUDP)
 	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
-	h.location = Location{Latitude: params.HostLatitude, Longitude: params.HostLongitude}
 
+	h.privateVerificationPortIp = concatIp(params.HostPrivateIP, params.VerificationPortUDP)
 	h.publicVerificationPortIp = concatIp(params.HostPublicIP, params.VerificationPortUDP)
-	h.publicVerificationReturnPortIp = concatIp(params.HostPublicIP, params.VerificationReturnPortUDP)
+	h.privateVerificationReturnPortIp = concatIp(params.HostPrivateIP, params.VerificationReturnPortUDP)
 
 	h.govecLogger = govec.InitGoVector(params.HostID, "./logs/" + params.HostID, govec.GetDefaultConfig())
 

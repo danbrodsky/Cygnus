@@ -1,10 +1,8 @@
 {
-  "HostLatitude" : 52.520008,
-  "HostLongitude" : 13.404954,
   "HostID" : "HBerlin",
   "PeerHosts" : [],
-  "HostPublicIP" : "127.0.0.1",
-  "HostPrivateIP" : "127.0.0.1",
+  "HostPublicIP" : "13.77.176.89",
+  "HostPrivateIP" : "10.0.0.4",
   "AcceptClientsPort": "6000",
   "HostsPortRPC": "6001",
   "HostsPortUDP": "6002",
