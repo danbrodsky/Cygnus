@@ -1,21 +1,21 @@
 package host
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"github.com/DistributedClocks/GoVector/govec"
 	"github.com/DistributedClocks/GoVector/govec/vrpc"
+	"github.com/sparrc/go-ping"
 	"io/ioutil"
 	"log"
-	"math"
 	"net"
 	"net/rpc"
 	"os"
-	///"strconv"
+	"strings"
 	"sync"
 	"time"
-	"bytes"
-	"encoding/gob"
 )
 
 const MaxTimeouts = 3
@@ -24,9 +24,6 @@ const DEBUG_CONSENSUS_PROPOSER = true
 
 type Host struct {
 	hostID string
-
-	//Location of the host
-	location Location
 
 	// public ip of host
 	publicIp string
@@ -45,7 +42,8 @@ type Host struct {
 
 	//Used to recieve consensus connection
 	publicVerificationPortIp string
-	publicVerificationReturnPortIp string
+	privateVerificationPortIp string
+	privateVerificationReturnPortIp string
 	blackList []string
 
 	//Peer ip addresses
@@ -107,9 +105,9 @@ type HostInterface interface {
 	floodHostRequest(sender string, hostRequest HostRequest)
 	floodHostClientPair(pair HostClientPair)
 	sendHostClientPair(clientAddr string, hostAddr string) bool
-	FindHostForClient(clientAddr string, clientLocation Location) string
+	FindHostForClient(clientAddr string) string
 	monitorNode(peer string)
-	waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string] bool, string)
+	waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string] bool, string)
 	ListenForHostErrors()
 	ListenForClientErrors()
 }
@@ -186,10 +184,9 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 			//Only accept if we are currently available
 			if h.clientAddr == "" {
 				h.clientAddr = pair.Client
-				h.clientConnected = false
+				h.clientConnected = true
 
 				// Begin streaming and accepting client input
-				// TODO: add channel for receiving errors/disconnects
 				go h.ListenForHostErrors()
 				h.HostStream.ConnectToClient(pair.Client, pair.Host)
 
@@ -237,6 +234,8 @@ func (h *Host) ListenForHostErrors() {
 	select {
 	case err := <-h.HostStream.hostErrorReceived:
 		fmt.Println(err)
+		h.clientAddr = ""
+		h.clientConnected = false
 		// TODO: reset host state back to available
 	}
 }
@@ -254,21 +253,18 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 		available := h.clientAddr == ""
 		h.clientLock.Unlock()
 
-		sendResponse := func(isBest bool) {
-			messageToSend := hostRequest
-			messageToSend.SenderVerificationLAddr = h.publicVerificationPortIp
-			if isBest {
-				messageToSend.BestHost = h.publicAddrClient
-				messageToSend.BestHostLocation = h.location
-				hostRequest = messageToSend
-			} else {
-				messageToSend.BestHost = ""
-				messageToSend.BestHostLocation = Location{}
+		sendResponse := func(avgRtt time.Duration, respondingHostAddr string) {
+			messageToSend := HostResponse{
+				SequenceNumber: hostRequest.SequenceNumber,
+				RequestingHost: hostRequest.RequestingHost,
+				RespondingHostAddr: respondingHostAddr,
+				RespondingHost: h.hostID,
+				AvgRTT: avgRtt,
+				SenderVerificationLAddr: h.publicVerificationPortIp,
 			}
-			messageToSend.RespondingHost = h.hostID
 			conn, err := net.Dial("udp", hostRequest.RequestingHost)
 			if err == nil {
-				b, err := marshallHostRequest(messageToSend)
+				b, err := marshallHostResponse(messageToSend)
 				if err == nil {
 					conn.Write(b)
 				}
@@ -279,20 +275,19 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 
 		//If this host is available and is better than the host in the current request, send itself to the requesting host
 		if available {
-			//If there is no host in the request right now
-			if hostRequest.BestHost == "" {
-				sendResponse(true)
+			split := strings.Split(hostRequest.ClientAddr, ":")
+			pinger, err := ping.NewPinger(split[0])
+			if err == nil {
+				pinger.Count = 3
+				pinger.Run()
+				stats := pinger.Statistics()
+				sendResponse(stats.AvgRtt, h.publicAddrClient)
 			} else {
-				currentBestDistance := distance(hostRequest.ClientLocation, hostRequest.BestHostLocation)
-				hostDistance := distance(hostRequest.ClientLocation, h.location)
-				if hostDistance < currentBestDistance {
-					sendResponse(true)
-				} else {
-					sendResponse(false)
-				}
+				sendResponse(time.Duration(-1), "")
+				log.Println(err)
 			}
 		} else {
-			sendResponse(false)
+			sendResponse(time.Duration(-1), "")
 		}
 		h.floodHostRequest(args.Sender, hostRequest)
 	}
@@ -303,6 +298,7 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 func (h *Host) setUpMessageRPC() {
 	handler := rpc.NewServer()
 	handler.Register(h)
+
 	l, e := net.Listen("tcp", h.privateAddrRPC)
 	if e != nil {
 		log.Fatal("listen error:", e)
@@ -417,7 +413,7 @@ func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) bool {
 
 // Ask hosts that responded to the flooding for agreement to accept client
 func (h *Host) askForAgreement(clientId string,respondedHosts map[string]string) bool{
-	conn,err := getConnection(h.publicVerificationReturnPortIp)
+	conn,err := getConnection(h.privateVerificationReturnPortIp)
 	if err != nil {
                 log.Fatal(err)
         }
@@ -521,7 +517,8 @@ func getConnection(ip string) (conn *net.UDPConn, err error) {
 
 //Will either return the ip of the best host, or an empty string if there are no hosts
 //TODO: this method probably doesn't need to be capitalized. Only is capitalize right now for testing purposes
-func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocation Location) string {
+func (h *Host) FindHostForClient(clientId string, clientAddr string) string {
+	fmt.Println("finding new host")
 	h.seqNumberLockHR.Lock()
 	seqNum := h.currSeqNumberHR
 	h.currSeqNumberHR++
@@ -530,7 +527,7 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 	//Create the host request and mark it as seen
 	hostRequest := HostRequest{
 		SequenceNumber: seqNum,
-		ClientLocation: clientLocation,
+		ClientAddr: clientAddr,
 		RequestingHost: h.publicAddrUDP}
 	h.seenHostRequestsLock.Lock()
 	h.seenHostRequests[hostRequest] = true
@@ -538,7 +535,7 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 
 	//Flood to network then wait for responses
 	h.floodHostRequest(h.publicAddrRPC, hostRequest)
-	respondedHosts, bestHost := h.waitForBestHost(h.privateAddrUDP, clientLocation, seqNum)
+	respondedHosts, bestHost := h.waitForBestHost(h.privateAddrUDP, clientAddr, seqNum)
 
 	log.Println(respondedHosts) //Array of host IDs that responded to the flooded request
 
@@ -555,11 +552,11 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 	//Flood the best client-host pairing
 	accept := h.sendHostClientPair(clientAddr, bestHost)
 	if accept {
-		log.Println("Host " + bestHost + " has agreed to accept client " + clientAddr)
+		fmt.Println("Host " + bestHost + " has agreed to accept client " + clientAddr)
 
 		// make ClientStream begin sending/receiving from best host
-		go h.ListenForClientErrors()
 		h.ClientStream.ConnectToHost(clientAddr, bestHost)
+		h.ListenForClientErrors(clientId, clientAddr)
 	} else {
 		log.Println("Host " + bestHost + " won't accept client " + clientAddr)
 	}
@@ -568,26 +565,35 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 	return bestHost
 }
 
-func (h *Host) ListenForClientErrors() {
+func (h *Host) ListenForClientErrors(clientId string, clientAddr string) {
 	select {
 	case err := <-h.ClientStream.clientErrorReceived:
 		fmt.Println(err)
+		time.Sleep(10 * time.Second)
+		h.FindHostForClient(clientId, clientAddr)
 		// TODO: reset client state back to available
 	}
 }
 
 //Wait for hosts to respond. Then choose the best host
-func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string]string, string) {
-	bestHost := ""
-	bestHostLocation := Location{}
-	currentBestDistance := float64(0)
+func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string]string, string) {
+	bestHostAddr := ""
+	bestHostTime := time.Duration(-1)
 
 	//If this host has no clients, add the host as the best host
 	h.clientLock.Lock()
 	if h.clientAddr == "" {
-		bestHost = h.publicAddrClient
-		bestHostLocation = h.location
-		currentBestDistance = distance(clientLocation, h.location)
+		split := strings.Split(clientAddr, ":")
+		pinger, err := ping.NewPinger(split[0])
+		if err == nil {
+			pinger.Count = 3
+			pinger.Run()
+			stats := pinger.Statistics()
+			bestHostTime = stats.AvgRtt
+			bestHostAddr = h.publicAddrClient
+		} else {
+			log.Println(err)
+		}
 	}
 	h.clientLock.Unlock()
 
@@ -602,8 +608,8 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 	}
 	defer l.Close()
 
-	//Only wait for three seconds
-	timeoutTime := time.Now().Add(time.Second * 3)
+	//Only wait for five seconds
+	timeoutTime := time.Now().Add(time.Second * 5)
 	l.SetReadDeadline(timeoutTime)
 
 	respondedHosts := make(map[string]string)
@@ -612,30 +618,29 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 		buffer := make([]byte, 1024)
 		n, _, err := l.ReadFromUDP(buffer)
 		if err == nil {
-			hostRequest, err := unMarshallHostRequest(buffer, n)
-			log.Println(hostRequest)
-			h.govecLogger.LogLocalEvent(": Location info from:" + hostRequest.RequestingHost, GovecOptions)
-			if err == nil && hostRequest.SequenceNumber == seqNum {
+			hostResponse, err := unMarshallHostResponse(buffer, n)
+			log.Println(hostResponse)
+			h.govecLogger.LogLocalEvent(": Location info from:" + hostResponse.RequestingHost, GovecOptions)
+			if err == nil && hostResponse.SequenceNumber == seqNum {
 				//If there is currently no best host, set the received host as the best host
-				if bestHostLocation == (Location{}) && hostRequest.BestHost != "" {
-					bestHost = hostRequest.BestHost
-					bestHostLocation = hostRequest.BestHostLocation
-					currentBestDistance = distance(clientLocation, bestHostLocation)
-				} else if bestHostLocation != (Location{}) && hostRequest.BestHost != "" {
-					//Otherwise, check to see if the newly received host is better than the current best host
-					newDistance := distance(clientLocation, hostRequest.BestHostLocation)
-					if newDistance < currentBestDistance {
-						bestHost = hostRequest.BestHost
-						bestHostLocation = hostRequest.BestHostLocation
-						currentBestDistance = distance(clientLocation, bestHostLocation)
+				if bestHostAddr == "" && hostResponse.RespondingHostAddr != "" {
+					bestHostAddr = hostResponse.RespondingHostAddr
+					bestHostTime = hostResponse.AvgRTT
+				} else if bestHostAddr != "" && hostResponse.RespondingHostAddr != "" {
+					baseline := time.Now()
+					currentBest := baseline.Add(bestHostTime)
+					newHostRTT := baseline.Add(hostResponse.AvgRTT)
+					if newHostRTT.Before(currentBest) {
+						bestHostAddr = hostResponse.RespondingHostAddr
+						bestHostTime = hostResponse.AvgRTT
 					}
 				}
-				respondedHosts[hostRequest.RespondingHost] = hostRequest.SenderVerificationLAddr
+				respondedHosts[hostResponse.RespondingHost] = hostResponse.SenderVerificationLAddr
 			}
 		}
 	}
 
-	return respondedHosts, bestHost
+	return respondedHosts, bestHostAddr
 }
 
 //Monitor a host node
@@ -687,20 +692,6 @@ func (h *Host) monitorNode(peer string) {
 	h.peerLock.Unlock()
 }
 
-//Calculate distance between two coordinates
-func distance(location1 Location, location2 Location) float64 {
-	radiansLat1 := toRadians(location1.Latitude)
-	radiansLat2 := toRadians(location2.Latitude)
-	diffLat := toRadians(location2.Latitude - location1.Latitude)
-	diffLong := toRadians(location2.Longitude - location1.Longitude)
-
-	var a = math.Sin(diffLat/2)*math.Sin(diffLat/2) + math.Cos(radiansLat1)*math.Cos(radiansLat2)*math.Sin(diffLong/2)*math.Sin(diffLong/2)
-	return 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
-}
-
-func toRadians(value float64) float64 {
-	return value * math.Pi / 180
-}
 
 func concatIp(ip string, port string) string {
 	return ip + ":" + port
@@ -709,7 +700,7 @@ func concatIp(ip string, port string) string {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //CONSENSES ACCPETOR METHODS
 func (h *Host) handleVerificationRequests(){
-	conn, err := getConnection(h.publicVerificationPortIp)
+	conn, err := getConnection(h.privateVerificationPortIp)
 	if err != nil {
                 log.Fatal(err)
         }
@@ -787,10 +778,10 @@ func Initialize(paramsPath string) (*Host) {
 	h.publicAddrUDP = concatIp(params.HostPublicIP, params.HostsPortUDP)
 	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
-	h.location = Location{Latitude: params.HostLatitude, Longitude: params.HostLongitude}
 
+	h.privateVerificationPortIp = concatIp(params.HostPrivateIP, params.VerificationPortUDP)
 	h.publicVerificationPortIp = concatIp(params.HostPublicIP, params.VerificationPortUDP)
-	h.publicVerificationReturnPortIp = concatIp(params.HostPublicIP, params.VerificationReturnPortUDP)
+	h.privateVerificationReturnPortIp = concatIp(params.HostPrivateIP, params.VerificationReturnPortUDP)
 
 	h.govecLogger = govec.InitGoVector(params.HostID, "./logs/" + params.HostID, govec.GetDefaultConfig())
 

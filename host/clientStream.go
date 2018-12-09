@@ -87,7 +87,7 @@ func (cs *ClientStream) ReceiveHostStream() {
 	defer cancel() // calling cancel() kills the exec command
 
 	// TODO: add -fs for fullscreen when done testing
-	ffplayCommand := exec.CommandContext(ctx, "ffplay", "-protocol_whitelist", "file,udp,rtp", cs.SdpFileName)
+	ffplayCommand := exec.CommandContext(ctx, "ffplay", "rtp://"+cs.ClientIpPort)
 
 	stderr, err := ffplayCommand.StderrPipe()
 	ffplayCommand.Start()
@@ -120,11 +120,12 @@ func (cs *ClientStream) ReceiveHostStream() {
 		}
 
 	}
-	cs.stopSendingToHost <- true
-
 	ffplayCommand.Wait()
+	cs.clientErrorReceived <-"ffplay command stopped"
+		cs.stopSendingToHost <- true
 	if err != nil {
 		log.Fatal(err)
+		fmt.Println(err)
 	}
 
 
@@ -153,6 +154,7 @@ func ReceiveHostData(s string) int {
 // connect to host stream and start sending key inputs
 func (cs *ClientStream) ConnectToHost(clientIpPort string, hostInputIpPort string) {
 
+	fmt.Println("Connecting to host at: " + hostInputIpPort)
 	cs.ClientIpPort = clientIpPort
 	cs.HostInputIpPort = hostInputIpPort
 	cs.SdpFileName = "StreamConfig.sdp"

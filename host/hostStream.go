@@ -49,7 +49,6 @@ func (hs *HostStream) ReceiveInputFromClient() {
 			default:
 				line, err := bufio.NewReader(c).ReadString('\n')
 				if err != nil {
-					fmt.Println(timeout.Sub(time.Now()) )
 					if timeout.Sub(time.Now()) < 0 * time.Second {
 						hs.hostErrorReceived <- "timeout while receiving inputs from client"
 						hs.stopSendingToClient <- true
@@ -72,7 +71,7 @@ func (hs *HostStream) SendStreamToClient() {
 	defer cancel() // calling cancel() kills the exec command
 	ffmpegCommand := exec.CommandContext(ctx, "ffmpeg", "-f", "x11grab",
 		"-s", hs.Resolution, "-i", hs.Display, "-threads", "4", "-r", hs.Framerate,
-		"-vcodec", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-crf",
+		"-vcodec", "mpeg2video", "-preset", "ultrafast", "-tune", "zerolatency", "-crf",
 		"51", "-b:v", "8000k", "-f", "rtp", "rtp://"+hs.ClientIpPort)
 	_, err := ffmpegCommand.StderrPipe()
 	ffmpegCommand.Start()
@@ -81,6 +80,7 @@ func (hs *HostStream) SendStreamToClient() {
 		return
 	}
 	ffmpegCommand.Wait()
+	fmt.Println("Host stream has stopped")
 	if err != nil {
 		log.Fatal(err)
 	}
