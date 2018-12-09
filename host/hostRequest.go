@@ -59,18 +59,18 @@ type DecisionMessage struct{
 }
 
 type Parameters struct {
-        HostID            string   `json:"HostID"`
-        PeerHosts         []string `json:"PeerHosts"`
-        HostPublicIP      string   `json:"HostPublicIP"`
-        HostPrivateIP     string   `json:"HostPrivateIP"`
-        AcceptClientsPort string   `json:"AcceptClientsPort"`
-        HostsPortRPC      string   `json:"HostsPortRPC"`
-        HostsPortUDP      string   `json:"HostsPortUDP"`
-        VerificationPortUDP      string   `json:"VerificationPortUDP"`
-        VerificationReturnPortUDP string `json:"VerificationReturnPortUDP"`
-        BlackList         []string  `json:"BlackList"`
+        HostID            			string   	`json:"HostID"`
+        PeerHosts         			[]string 	`json:"PeerHosts"`
+        HostPublicIP      			string   	`json:"HostPublicIP"`
+        HostPrivateIP     			string   	`json:"HostPrivateIP"`
+        AcceptClientsPort 			string   	`json:"AcceptClientsPort"`
+        HostsPortRPC      			string   	`json:"HostsPortRPC"`
+        HostsPortUDP      			string   	`json:"HostsPortUDP"`
+        VerificationPortUDP      	string   	`json:"VerificationPortUDP"`
+        VerificationReturnPortUDP	string		`json:"VerificationReturnPortUDP"`
+        BlackList         			[]string  	`json:"BlackList"`
+        Available					bool		`json:"Available"`
 }
-
 
 func marshallHostResponse(hb HostResponse) ([]byte, error) {
 	var network bytes.Buffer

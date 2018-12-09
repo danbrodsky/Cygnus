@@ -105,11 +105,11 @@ type HostInterface interface {
 	floodHostRequest(sender string, hostRequest HostRequest)
 	floodHostClientPair(pair HostClientPair)
 	sendHostClientPair(clientAddr string, hostAddr string) bool
-	FindHostForClient(clientAddr string) string
+	FindHostForClient(clientAddr string)
 	monitorNode(peer string)
-	waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string] bool, string)
+	waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string] string, string, string)
 	ListenForHostErrors()
-	ListenForClientErrors()
+	ListenForClientErrors(clientAddr string)
 }
 
 var(
@@ -185,7 +185,7 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 
 
 			//Only accept if we are currently available
-			if h.clientAddr == "" {
+			if h.clientAddr == "" && h.clientConnected == false {
 				fmt.Println("received client request")
 				h.clientAddr = pair.Client
 				h.clientConnected = true
@@ -215,17 +215,6 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 			h.seenPairAcks[pairAck] = true
 			h.pairAcksLock.Unlock()
 			go h.floodPairAck(pairAck)
-
-			//If no client connects after 1 minute, reset the client address
-			//Don't wait forever for the client
-			go func() {
-				time.Sleep(1 * time.Minute)
-				h.clientLock.Lock()
-				if !h.clientConnected {
-					h.clientAddr = ""
-				}
-				h.clientLock.Unlock()
-			}()
 		} else {
 			//Flood pairing to peers
 			h.floodHostClientPair(pair)
@@ -238,8 +227,11 @@ func (h *Host) ListenForHostErrors() {
 	select {
 	case err := <-h.HostStream.hostErrorReceived:
 		fmt.Println(err)
+
+		h.clientLock.Lock()
 		h.clientAddr = ""
 		h.clientConnected = false
+		h.clientLock.Unlock()
 		// TODO: reset host state back to available
 	}
 }
@@ -254,7 +246,7 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 
 	if !ok {
 		h.clientLock.Lock()
-		available := h.clientAddr == ""
+		available := !h.clientConnected
 		h.clientLock.Unlock()
 
 		sendResponse := func(avgRtt time.Duration, respondingHostAddr string) {
@@ -519,9 +511,8 @@ func getConnection(ip string) (conn *net.UDPConn, err error) {
 	return l, nil
 }
 
-//Will either return the ip of the best host, or an empty string if there are no hosts
 //TODO: this method probably doesn't need to be capitalized. Only is capitalize right now for testing purposes
-func (h *Host) FindHostForClient(clientAddr string) string {
+func (h *Host) FindHostForClient(clientAddr string) {
 	fmt.Println("finding new host")
 	h.seqNumberLockHR.Lock()
 	seqNum := h.currSeqNumberHR
@@ -544,7 +535,7 @@ func (h *Host) FindHostForClient(clientAddr string) string {
 
 	if respondedHosts == nil {
 		log.Println("No hosts are currently available.")
-		return ""
+		return
 	}
 
 	log.Println(respondedHosts) //Array of host IDs that responded to the flooded request
@@ -554,10 +545,9 @@ func (h *Host) FindHostForClient(clientAddr string) string {
 		log.Println("HostId:", bestHostId ,"Network Decision:", decision)
 	}
 
-	if(!decision){
-                return "-1.-1.-1.-1"
-        }
-	//TODO: Check that there actually is a best host (bestHost != "")
+	if !decision {
+		return
+	}
 
 	//Flood the best client-host pairing
 	accept := h.sendHostClientPair(clientAddr, bestHost)
@@ -570,9 +560,6 @@ func (h *Host) FindHostForClient(clientAddr string) string {
 	} else {
 		log.Println("Host " + bestHost + " won't accept client " + clientAddr)
 	}
-	//TODO: Do something with the return of 'accept'. If the target host doesn't accept, find another one?
-
-	return bestHost
 }
 
 func (h *Host) ListenForClientErrors(clientAddr string) {
@@ -589,26 +576,7 @@ func (h *Host) ListenForClientErrors(clientAddr string) {
 func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string]string, string, string) {
 	bestHostAddr := ""
 	bestHostId   := ""
-
 	bestHostTime := time.Duration(1*time.Minute)
-
-	//If this host has no clients, add the host as the best host
-	//h.clientLock.Lock()
-	//if h.clientAddr == "" {
-	//	split := strings.Split(clientAddr, ":")
-	//	pinger, err := ping.NewPinger(split[0])
-	//	if err == nil {
-	//		pinger.Count = 3
-	//		pinger.Run()
-	//		stats := pinger.Statistics()
-	//		bestHostTime = stats.AvgRtt
-	//		bestHostAddr = h.publicAddrClient
-	//		bestHostId = h.hostID
-	//	} else {
-	//		log.Println(err)
-	//	}
-	//}
-	//h.clientLock.Unlock()
 
 	//Wait for other hosts to send themselves on the udp connection
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
@@ -655,7 +623,7 @@ func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (m
 		}
 	}
 
-	if bestHostTime == 1 * time.Minute {
+	if bestHostAddr == "" {
 		return nil, "", ""
 	} else {
 		return respondedHosts, bestHostAddr, bestHostId
