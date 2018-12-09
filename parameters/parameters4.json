@@ -1,7 +1,5 @@
 {
-  "HostLatitude" : 39.904202,
-  "HostLongitude" : 116.407394,
-  "HostID" : "HBeijing",
+  "HostID" : "Host4",
   "PeerHosts" : ["127.0.0.1:7001"],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
@@ -10,5 +8,6 @@
   "HostsPortUDP": "8002",
   "VerificationPortUDP": "8003",
   "VerificationReturnPortUDP": "8004",
-  "BlackList": []
+  "BlackList": [],
+  "Available": true
 }

@@ -1,7 +1,5 @@
 {
-  "HostLatitude" : 52.520008,
-  "HostLongitude" : 13.404954,
-  "HostID" : "HBerlin",
+  "HostID" : "Host2",
   "PeerHosts" : [],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
@@ -10,5 +8,6 @@
   "HostsPortUDP": "6002",
   "VerificationPortUDP": "6003",
   "VerificationReturnPortUDP": "6004",
-  "BlackList": ["jcho"]
+  "BlackList": ["Host5"],
+  "Available": true
 }

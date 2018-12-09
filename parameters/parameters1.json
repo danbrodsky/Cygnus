@@ -1,7 +1,5 @@
 {
-  "HostLatitude" : 49.282730,
-  "HostLongitude" : -123.120735,
-  "HostID" : "HVancouver",
+  "HostID" : "Host1",
   "PeerHosts" : [],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
@@ -10,5 +8,6 @@
   "HostsPortUDP": "5002",
   "VerificationPortUDP": "5003",
   "VerificationReturnPortUDP": "5004",
-  "BlackList": ["jcho"]
+  "BlackList": ["Host5"],
+  "Available": true
 }

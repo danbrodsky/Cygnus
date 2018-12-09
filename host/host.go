@@ -174,15 +174,19 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 	_, ok := h.seenPairings[pair]
 	h.seenPairings[pair] = true
 	h.seenPairingsLock.Unlock()
+	fmt.Println("received client request at: " + h.hostID)
 
 	//If we haven't seen the message before, check if we are the host that is being paired
 	if !ok {
 		if pair.Host == h.publicAddrClient {
 			h.clientLock.Lock()
 			var pairAck PairAck
+			fmt.Println("host being paired: " + h.hostID)
+
 
 			//Only accept if we are currently available
 			if h.clientAddr == "" {
+				fmt.Println("received client request")
 				h.clientAddr = pair.Client
 				h.clientConnected = true
 
@@ -412,7 +416,7 @@ func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) bool {
 //CONSENSES PROPOSE METHODS
 
 // Ask hosts that responded to the flooding for agreement to accept client
-func (h *Host) askForAgreement(clientId string,respondedHosts map[string]string) bool{
+func (h *Host) askForAgreement(hostId string,respondedHosts map[string]string) bool{
 	conn,err := getConnection(h.privateVerificationReturnPortIp)
 	if err != nil {
                 log.Fatal(err)
@@ -422,7 +426,7 @@ func (h *Host) askForAgreement(clientId string,respondedHosts map[string]string)
 	go waitForDecisions(respondedHosts, conn, decisionChan)
 
 	for _, v := range respondedHosts {
-		vm := VerificationMesssage{ClientId: clientId, ReturnIp: conn.LocalAddr().String()}
+		vm := VerificationMesssage{HostId: hostId, ReturnIp: conn.LocalAddr().String()}
 		h.proposeAcceptence(v, vm)
 	}
 	return <-decisionChan
@@ -517,7 +521,7 @@ func getConnection(ip string) (conn *net.UDPConn, err error) {
 
 //Will either return the ip of the best host, or an empty string if there are no hosts
 //TODO: this method probably doesn't need to be capitalized. Only is capitalize right now for testing purposes
-func (h *Host) FindHostForClient(clientId string, clientAddr string) string {
+func (h *Host) FindHostForClient(clientAddr string) string {
 	fmt.Println("finding new host")
 	h.seqNumberLockHR.Lock()
 	seqNum := h.currSeqNumberHR
@@ -535,13 +539,19 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string) string {
 
 	//Flood to network then wait for responses
 	h.floodHostRequest(h.publicAddrRPC, hostRequest)
-	respondedHosts, bestHost := h.waitForBestHost(h.privateAddrUDP, clientAddr, seqNum)
+
+	respondedHosts, bestHost, bestHostId := h.waitForBestHost(h.privateAddrUDP, clientAddr, seqNum)
+
+	if respondedHosts == nil {
+		log.Println("No hosts are currently available.")
+		return ""
+	}
 
 	log.Println(respondedHosts) //Array of host IDs that responded to the flooded request
 
-	decision := h.askForAgreement(clientId, respondedHosts)
+	decision := h.askForAgreement(bestHostId, respondedHosts)
 	if(DEBUG_CONSENSUS_PROPOSER){
-		log.Println("Client:", clientId ,"Network Decision:", decision)
+		log.Println("HostId:", bestHostId ,"Network Decision:", decision)
 	}
 
 	if(!decision){
@@ -556,7 +566,7 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string) string {
 
 		// make ClientStream begin sending/receiving from best host
 		h.ClientStream.ConnectToHost(clientAddr, bestHost)
-		h.ListenForClientErrors(clientId, clientAddr)
+		h.ListenForClientErrors(clientAddr)
 	} else {
 		log.Println("Host " + bestHost + " won't accept client " + clientAddr)
 	}
@@ -565,37 +575,40 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string) string {
 	return bestHost
 }
 
-func (h *Host) ListenForClientErrors(clientId string, clientAddr string) {
+func (h *Host) ListenForClientErrors(clientAddr string) {
 	select {
 	case err := <-h.ClientStream.clientErrorReceived:
 		fmt.Println(err)
 		time.Sleep(10 * time.Second)
-		h.FindHostForClient(clientId, clientAddr)
+		h.FindHostForClient(clientAddr)
 		// TODO: reset client state back to available
 	}
 }
 
 //Wait for hosts to respond. Then choose the best host
-func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string]string, string) {
+func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string]string, string, string) {
 	bestHostAddr := ""
-	bestHostTime := time.Duration(-1)
+	bestHostId   := ""
+
+	bestHostTime := time.Duration(1*time.Minute)
 
 	//If this host has no clients, add the host as the best host
-	h.clientLock.Lock()
-	if h.clientAddr == "" {
-		split := strings.Split(clientAddr, ":")
-		pinger, err := ping.NewPinger(split[0])
-		if err == nil {
-			pinger.Count = 3
-			pinger.Run()
-			stats := pinger.Statistics()
-			bestHostTime = stats.AvgRtt
-			bestHostAddr = h.publicAddrClient
-		} else {
-			log.Println(err)
-		}
-	}
-	h.clientLock.Unlock()
+	//h.clientLock.Lock()
+	//if h.clientAddr == "" {
+	//	split := strings.Split(clientAddr, ":")
+	//	pinger, err := ping.NewPinger(split[0])
+	//	if err == nil {
+	//		pinger.Count = 3
+	//		pinger.Run()
+	//		stats := pinger.Statistics()
+	//		bestHostTime = stats.AvgRtt
+	//		bestHostAddr = h.publicAddrClient
+	//		bestHostId = h.hostID
+	//	} else {
+	//		log.Println(err)
+	//	}
+	//}
+	//h.clientLock.Unlock()
 
 	//Wait for other hosts to send themselves on the udp connection
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
@@ -625,6 +638,7 @@ func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (m
 				//If there is currently no best host, set the received host as the best host
 				if bestHostAddr == "" && hostResponse.RespondingHostAddr != "" {
 					bestHostAddr = hostResponse.RespondingHostAddr
+					bestHostId = hostResponse.RespondingHost
 					bestHostTime = hostResponse.AvgRTT
 				} else if bestHostAddr != "" && hostResponse.RespondingHostAddr != "" {
 					baseline := time.Now()
@@ -632,6 +646,7 @@ func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (m
 					newHostRTT := baseline.Add(hostResponse.AvgRTT)
 					if newHostRTT.Before(currentBest) {
 						bestHostAddr = hostResponse.RespondingHostAddr
+						bestHostId = hostResponse.RespondingHost
 						bestHostTime = hostResponse.AvgRTT
 					}
 				}
@@ -640,7 +655,11 @@ func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (m
 		}
 	}
 
-	return respondedHosts, bestHostAddr
+	if bestHostTime == 1 * time.Minute {
+		return nil, "", ""
+	} else {
+		return respondedHosts, bestHostAddr, bestHostId
+	}
 }
 
 //Monitor a host node
@@ -698,7 +717,7 @@ func concatIp(ip string, port string) string {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//CONSENSES ACCPETOR METHODS
+//CONSENSUS ACCEPTER METHODS
 func (h *Host) handleVerificationRequests(){
 	conn, err := getConnection(h.privateVerificationPortIp)
 	if err != nil {
@@ -729,13 +748,12 @@ func (h *Host) handleVerificationRequests(){
 		network.Reset()
 	}
 }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func (h *Host) respondDecision(vm VerificationMesssage){
 	// TODO filter with blacklist
 	dm := DecisionMessage{HostId: h.hostID, Decision:true}
 	for _,v := range h.blackList {
-		if(v == vm.ClientId){
+		if(v == vm.HostId){
 			dm.Decision = false
 		}
 	}
@@ -756,6 +774,7 @@ func (h *Host) respondDecision(vm VerificationMesssage){
                 log.Println("Error writing to UDP", err)
         }
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 func Initialize(paramsPath string) (*Host) {
 	var params Parameters
@@ -813,6 +832,8 @@ func Initialize(paramsPath string) (*Host) {
 
 	//initialize the client streaming service
 	h.ClientStream = &ClientStream{}
+
+	h.clientConnected = !params.Available
 
 	for _, peer := range params.PeerHosts {
 		h.addPeer(peer)

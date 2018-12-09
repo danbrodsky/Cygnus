@@ -1,7 +1,5 @@
 {
-  "HostLatitude" : 34.693737,
-  "HostLongitude" : 135.502167,
-  "HostID" : "HOsaka",
+  "HostID" : "Host5",
   "PeerHosts" : ["127.0.0.1:8001"],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
@@ -10,5 +8,6 @@
   "HostsPortUDP": "9002",
   "VerificationPortUDP": "9003",
   "VerificationReturnPortUDP": "9004",
-  "BlackList": []
+  "BlackList": [],
+  "Available": false
 }

@@ -1,7 +1,5 @@
 {
-  "HostLatitude" : 51.507351,
-  "HostLongitude" : -0.127758,
-  "HostID" : "HLondon",
+  "HostID" : "Host3",
   "PeerHosts" : ["127.0.0.1:5001", "127.0.0.1:6001"],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
@@ -10,5 +8,6 @@
   "HostsPortUDP": "7002",
   "VerificationPortUDP": "7003",
   "VerificationReturnPortUDP": "7004",
-  "BlackList": []
+  "BlackList": [],
+  "Available": true
 }

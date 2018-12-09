@@ -1,7 +1,5 @@
 {
-  "HostLatitude" : 47.606209,
-  "HostLongitude" : -122.332069,
-  "HostID" : "HSeattle",
+  "HostID" : "Host6",
   "PeerHosts" : ["127.0.0.1:8001"],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
@@ -10,5 +8,7 @@
   "HostsPortUDP": "4002",
   "VerificationPortUDP": "4003",
   "VerificationReturnPortUDP": "4004",
-  "BlackList": []
+  "BlackList": [],
+  "Available": true
+
 }
