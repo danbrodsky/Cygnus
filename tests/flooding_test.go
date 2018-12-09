@@ -19,19 +19,19 @@ func TestFlooding(t *testing.T) {
 	host.Initialize("../parameters/parameters6.json") //Seattle
 
 	expectedHost := "127.0.0.1:5000"
-	foundHost := host5.FindHostForClient("jcho", clientIp + ":5050")
+	foundHost := host5.FindHostForClient(clientIp + ":5050")
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
 
 	expectedHost = "127.0.0.1:9000"
-	foundHost = host3.FindHostForClient("jcho", clientIp + ":5052")
+	foundHost = host3.FindHostForClient(clientIp + ":5052")
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}
 
 	expectedHost = "127.0.0.1:4000"
-	foundHost = host5.FindHostForClient("jcho", clientIp + ":5051")
+	foundHost = host5.FindHostForClient(clientIp + ":5051")
 	if foundHost != expectedHost {
 		t.Errorf("Expected %s, got %s", expectedHost, foundHost)
 	}

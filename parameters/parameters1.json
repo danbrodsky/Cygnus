@@ -1,12 +1,12 @@
 {
   "HostID" : "Host1",
   "PeerHosts" : [],
-  "HostPublicIP" : "13.77.176.89",
-  "HostPrivateIP" : "10.0.0.4",
+  "HostPublicIP" : "127.0.0.1",
+  "HostPrivateIP" : "127.0.0.1",
   "AcceptClientsPort": "5000",
   "HostsPortRPC": "5001",
   "HostsPortUDP": "5002",
   "VerificationPortUDP": "5003",
   "VerificationReturnPortUDP": "5004",
-  "BlackList": ["jcho"]
+  "BlackList": ["Host5"]
 }

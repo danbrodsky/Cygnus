@@ -1,0 +1,170 @@
+Host6 {"Host6":1}
+Initialization Complete
+Host6 {"Host6":2}
+Making RPC call
+Host6 {"Host6":3}
+Making RPC call
+Host6 {"Host3":20, "Host6":4, "Host1":8, "Host2":5, "Host4":17, "Host5":8}
+Received RPC Call response from server
+Host6 {"Host3":20, "Host6":5, "Host1":8, "Host2":5, "Host4":17, "Host5":8}
+Received RPC Call response from server
+Host6 {"Host1":8, "Host2":5, "Host4":18, "Host5":8, "Host3":20, "Host6":6}
+Received RPC request
+Host6 {"Host2":5, "Host4":18, "Host5":8, "Host3":20, "Host6":7, "Host1":8}
+Making RPC call
+Host6 {"Host6":8, "Host1":8, "Host2":5, "Host4":18, "Host5":8, "Host3":20}
+Sending response to RPC request
+Host6 {"Host6":9, "Host1":8, "Host2":8, "Host4":31, "Host5":9, "Host3":29}
+Received RPC Call response from server
+Host6 {"Host6":10, "Host1":8, "Host2":8, "Host4":31, "Host5":9, "Host3":29}
+Making RPC call
+Host6 {"Host1":13, "Host2":13, "Host4":40, "Host5":18, "Host3":39, "Host6":11}
+Received RPC request
+Host6 {"Host3":39, "Host6":12, "Host1":13, "Host2":13, "Host4":41, "Host5":18}
+Received RPC request
+Host6 {"Host6":13, "Host1":13, "Host2":13, "Host4":41, "Host5":18, "Host3":39}
+Making RPC call
+Host6 {"Host2":13, "Host4":41, "Host5":18, "Host3":39, "Host6":14, "Host1":13}
+Sending response to RPC request
+Host6 {"Host2":13, "Host4":42, "Host5":18, "Host3":39, "Host6":15, "Host1":13}
+Received RPC Call response from server
+Host6 {"Host5":18, "Host3":39, "Host6":16, "Host1":13, "Host2":13, "Host4":42}
+Sending response to RPC request
+Host6 {"Host1":15, "Host2":15, "Host4":50, "Host5":22, "Host3":45, "Host6":17}
+Received RPC Call response from server
+Host6 {"Host1":15, "Host2":15, "Host4":50, "Host5":22, "Host3":45, "Host6":18}
+Making RPC call
+Host6 {"Host5":24, "Host3":56, "Host6":19, "Host1":17, "Host2":17, "Host4":62}
+Received RPC request
+Host6 {"Host1":17, "Host2":17, "Host4":63, "Host5":24, "Host3":56, "Host6":20}
+Received RPC Call response from server
+Host6 {"Host2":17, "Host4":63, "Host5":24, "Host3":56, "Host6":21, "Host1":17}
+Sending response to RPC request
+Host6 {"Host6":22, "Host1":23, "Host2":22, "Host4":68, "Host5":26, "Host3":66}
+Received RPC request
+Host6 {"Host4":68, "Host5":26, "Host3":66, "Host6":23, "Host1":23, "Host2":22}
+Making RPC call
+Host6 {"Host2":22, "Host4":68, "Host5":26, "Host3":66, "Host6":24, "Host1":23}
+Sending response to RPC request
+Host6 {"Host6":25, "Host1":23, "Host2":23, "Host4":78, "Host5":30, "Host3":71}
+Received RPC Call response from server
+Host6 {"Host6":26, "Host1":23, "Host2":23, "Host4":78, "Host5":30, "Host3":71}
+Making RPC call
+Host6 {"Host2":31, "Host4":85, "Host5":30, "Host3":89, "Host6":27, "Host1":29}
+Received RPC request
+Host6 {"Host6":28, "Host1":29, "Host2":31, "Host4":85, "Host5":30, "Host3":89}
+Making RPC call
+Host6 {"Host6":29, "Host1":29, "Host2":31, "Host4":85, "Host5":30, "Host3":89}
+Sending response to RPC request
+Host6 {"Host6":30, "Host1":34, "Host2":33, "Host4":96, "Host5":35, "Host3":105}
+Received RPC request
+Host6 {"Host2":33, "Host4":96, "Host5":35, "Host3":105, "Host6":31, "Host1":34}
+Sending response to RPC request
+Host6 {"Host4":99, "Host5":37, "Host3":105, "Host6":32, "Host1":34, "Host2":33}
+Received RPC Call response from server
+Host6 {"Host5":37, "Host3":105, "Host6":33, "Host1":34, "Host2":33, "Host4":103}
+Received RPC Call response from server
+Host6 {"Host6":34, "Host1":38, "Host2":40, "Host4":112, "Host5":42, "Host3":118}
+Received RPC request
+Host6 {"Host6":35, "Host1":38, "Host2":40, "Host4":112, "Host5":42, "Host3":118}
+Making RPC call
+Host6 {"Host5":42, "Host3":118, "Host6":36, "Host1":38, "Host2":40, "Host4":112}
+Sending response to RPC request
+Host6 {"Host3":118, "Host6":37, "Host1":38, "Host2":40, "Host4":115, "Host5":42}
+Received RPC Call response from server
+Host6 {"Host1":38, "Host2":40, "Host4":115, "Host5":42, "Host3":118, "Host6":38}
+Making RPC call
+Host6 {"Host6":39, "Host1":42, "Host2":43, "Host4":124, "Host5":44, "Host3":129}
+Received RPC request
+Host6 {"Host3":129, "Host6":40, "Host1":42, "Host2":43, "Host4":125, "Host5":44}
+Received RPC Call response from server
+Host6 {"Host2":43, "Host4":125, "Host5":44, "Host3":129, "Host6":41, "Host1":42}
+Sending response to RPC request
+Host6 {"Host6":42, "Host1":46, "Host2":46, "Host4":136, "Host5":50, "Host3":138}
+Received RPC request
+Host6 {"Host6":43, "Host1":46, "Host2":46, "Host4":136, "Host5":50, "Host3":138}
+Making RPC call
+Host6 {"Host4":136, "Host5":50, "Host3":138, "Host6":44, "Host1":46, "Host2":46}
+Sending response to RPC request
+Host6 {"Host5":50, "Host3":138, "Host6":45, "Host1":46, "Host2":46, "Host4":138}
+Received RPC Call response from server
+Host6 {"Host3":138, "Host6":46, "Host1":46, "Host2":46, "Host4":138, "Host5":50}
+Making RPC call
+Host6 {"Host6":47, "Host1":47, "Host2":50, "Host4":144, "Host5":50, "Host3":149}
+Received RPC request
+Host6 {"Host6":48, "Host1":47, "Host2":50, "Host4":145, "Host5":50, "Host3":149}
+Received RPC Call response from server
+Host6 {"Host1":47, "Host2":50, "Host4":145, "Host5":50, "Host3":149, "Host6":49}
+Sending response to RPC request
+Host6 {"Host6":50, "Host1":53, "Host2":55, "Host4":160, "Host5":58, "Host3":162}
+Received RPC request
+Host6 {"Host6":51, "Host1":53, "Host2":55, "Host4":160, "Host5":58, "Host3":162}
+Making RPC call
+Host6 {"Host6":52, "Host1":53, "Host2":55, "Host4":160, "Host5":58, "Host3":162}
+Sending response to RPC request
+Host6 {"Host3":162, "Host6":53, "Host1":53, "Host2":55, "Host4":162, "Host5":58}
+Received RPC Call response from server
+Host6 {"Host6":54, "Host1":53, "Host2":55, "Host4":162, "Host5":58, "Host3":162}
+Making RPC call
+Host6 {"Host2":57, "Host4":168, "Host5":58, "Host3":173, "Host6":55, "Host1":55}
+Received RPC request
+Host6 {"Host6":56, "Host1":55, "Host2":57, "Host4":168, "Host5":58, "Host3":173}
+Sending response to RPC request
+Host6 {"Host6":57, "Host1":55, "Host2":57, "Host4":169, "Host5":58, "Host3":173}
+Received RPC Call response from server
+Host6 {"Host6":58, "Host1":62, "Host2":63, "Host4":184, "Host5":66, "Host3":186}
+Received RPC request
+Host6 {"Host5":66, "Host3":186, "Host6":59, "Host1":62, "Host2":63, "Host4":184}
+Making RPC call
+Host6 {"Host1":62, "Host2":63, "Host4":184, "Host5":66, "Host3":186, "Host6":60}
+Sending response to RPC request
+Host6 {"Host4":187, "Host5":66, "Host3":186, "Host6":61, "Host1":62, "Host2":63}
+Received RPC Call response from server
+Host6 {"Host3":186, "Host6":62, "Host1":62, "Host2":63, "Host4":187, "Host5":66}
+Making RPC call
+Host6 {"Host4":194, "Host5":68, "Host3":201, "Host6":63, "Host1":67, "Host2":66}
+Received RPC request
+Host6 {"Host4":194, "Host5":68, "Host3":201, "Host6":64, "Host1":67, "Host2":66}
+Sending response to RPC request
+Host6 {"Host1":67, "Host2":66, "Host4":195, "Host5":68, "Host3":201, "Host6":65}
+Received RPC Call response from server
+Host6 {"Host2":66, "Host4":205, "Host5":72, "Host3":201, "Host6":66, "Host1":67}
+Received RPC request
+Host6 {"Host1":67, "Host2":66, "Host4":205, "Host5":72, "Host3":201, "Host6":67}
+Making RPC call
+Host6 {"Host6":68, "Host1":67, "Host2":66, "Host4":205, "Host5":72, "Host3":201}
+Sending response to RPC request
+Host6 {"Host3":201, "Host6":69, "Host1":67, "Host2":66, "Host4":207, "Host5":72}
+Received RPC request
+Host6 {"Host6":70, "Host1":67, "Host2":66, "Host4":207, "Host5":72, "Host3":201}
+Making RPC call
+Host6 {"Host6":71, "Host1":67, "Host2":66, "Host4":207, "Host5":72, "Host3":201}
+Sending response to RPC request
+Host6 {"Host3":201, "Host6":72, "Host1":67, "Host2":66, "Host4":207, "Host5":72}
+Received RPC Call response from server
+Host6 {"Host5":77, "Host3":201, "Host6":73, "Host1":67, "Host2":66, "Host4":215}
+Received RPC Call response from server
+Host6 {"Host4":215, "Host5":77, "Host3":201, "Host6":74, "Host1":67, "Host2":66}
+Making RPC call
+Host6 {"Host6":75, "Host1":76, "Host2":74, "Host4":232, "Host5":80, "Host3":233}
+Received RPC request
+Host6 {"Host4":233, "Host5":80, "Host3":233, "Host6":76, "Host1":76, "Host2":74}
+Received RPC Call response from server
+Host6 {"Host6":77, "Host1":76, "Host2":74, "Host4":233, "Host5":80, "Host3":233}
+Sending response to RPC request
+Host6 {"Host4":238, "Host5":82, "Host3":233, "Host6":78, "Host1":76, "Host2":74}
+Received RPC request
+Host6 {"Host5":82, "Host3":233, "Host6":79, "Host1":76, "Host2":74, "Host4":238}
+Making RPC call
+Host6 {"Host4":238, "Host5":82, "Host3":233, "Host6":80, "Host1":76, "Host2":74}
+Sending response to RPC request
+Host6 {"Host5":86, "Host3":233, "Host6":81, "Host1":76, "Host2":74, "Host4":244}
+Received RPC Call response from server
+Host6 {"Host6":82, "Host1":76, "Host2":74, "Host4":244, "Host5":86, "Host3":233}
+Making RPC call
+Host6 {"Host4":248, "Host5":88, "Host3":249, "Host6":83, "Host1":83, "Host2":83}
+Received RPC request
+Host6 {"Host5":88, "Host3":249, "Host6":84, "Host1":83, "Host2":83, "Host4":249}
+Received RPC Call response from server
+Host6 {"Host6":85, "Host1":83, "Host2":83, "Host4":249, "Host5":88, "Host3":249}
+Sending response to RPC request

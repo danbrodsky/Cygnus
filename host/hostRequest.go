@@ -49,7 +49,7 @@ type Ack struct {
 }
 
 type VerificationMesssage struct {
-        ClientId string
+        HostId string
         ReturnIp string
 }
 

@@ -1,8 +1,8 @@
 {
   "HostID" : "Host4",
-  "PeerHosts" : ["13.77.176.89:7001"],
-  "HostPublicIP" : "13.77.176.89",
-  "HostPrivateIP" : "10.0.0.4",
+  "PeerHosts" : ["127.0.0.1:7001"],
+  "HostPublicIP" : "127.0.0.1",
+  "HostPrivateIP" : "127.0.0.1",
   "AcceptClientsPort": "8000",
   "HostsPortRPC": "8001",
   "HostsPortUDP": "8002",
