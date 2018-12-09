@@ -1,20 +1,21 @@
 package host
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"github.com/DistributedClocks/GoVector/govec"
 	"github.com/DistributedClocks/GoVector/govec/vrpc"
+	"github.com/sparrc/go-ping"
 	"io/ioutil"
 	"log"
 	"math"
 	"net"
 	"net/rpc"
 	"os"
-	///"strconv"
+	"strings"
 	"sync"
 	"time"
-	"bytes"
-	"encoding/gob"
 )
 
 const MaxTimeouts = 3
@@ -232,21 +233,18 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 		available := h.clientAddr == ""
 		h.clientLock.Unlock()
 
-		sendResponse := func(isBest bool) {
-			messageToSend := hostRequest
-			messageToSend.SenderVerificationLAddr = h.publicVerificationPortIp
-			if isBest {
-				messageToSend.BestHost = h.publicAddrClient
-				messageToSend.BestHostLocation = h.location
-				hostRequest = messageToSend
-			} else {
-				messageToSend.BestHost = ""
-				messageToSend.BestHostLocation = Location{}
+		sendResponse := func(avgRtt time.Duration, respondingHostAddr string) {
+			messageToSend := HostResponse{
+				SequenceNumber: hostRequest.SequenceNumber,
+				RequestingHost: hostRequest.RequestingHost,
+				RespondingHostAddr: respondingHostAddr,
+				RespondingHost: h.hostID,
+				AvgRTT: avgRtt,
+				SenderVerificationLAddr: h.publicVerificationPortIp,
 			}
-			messageToSend.RespondingHost = h.hostID
 			conn, err := net.Dial("udp", hostRequest.RequestingHost)
 			if err == nil {
-				b, err := marshallHostRequest(messageToSend)
+				b, err := marshallHostResponse(messageToSend)
 				if err == nil {
 					conn.Write(b)
 				}
@@ -257,20 +255,20 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 
 		//If this host is available and is better than the host in the current request, send itself to the requesting host
 		if available {
-			//If there is no host in the request right now
-			if hostRequest.BestHost == "" {
-				sendResponse(true)
+			split := strings.Split(hostRequest.ClientAddr, ":")
+			pinger, err := ping.NewPinger(split[0])
+			if err == nil {
+				pinger.Count = 3
+				pinger.Run()
+				stats := pinger.Statistics()
+				log.Println(stats.AvgRtt)
+				sendResponse(stats.AvgRtt, h.publicAddrClient)
 			} else {
-				currentBestDistance := distance(hostRequest.ClientLocation, hostRequest.BestHostLocation)
-				hostDistance := distance(hostRequest.ClientLocation, h.location)
-				if hostDistance < currentBestDistance {
-					sendResponse(true)
-				} else {
-					sendResponse(false)
-				}
+				sendResponse(time.Duration(-1), "")
+				log.Println(err)
 			}
 		} else {
-			sendResponse(false)
+			sendResponse(time.Duration(-1), "")
 		}
 		h.floodHostRequest(args.Sender, hostRequest)
 	}
@@ -281,6 +279,7 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 func (h *Host) setUpMessageRPC() {
 	handler := rpc.NewServer()
 	handler.Register(h)
+
 	l, e := net.Listen("tcp", h.privateAddrRPC)
 	if e != nil {
 		log.Fatal("listen error:", e)
@@ -508,7 +507,7 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 	//Create the host request and mark it as seen
 	hostRequest := HostRequest{
 		SequenceNumber: seqNum,
-		ClientLocation: clientLocation,
+		ClientAddr: clientAddr,
 		RequestingHost: h.publicAddrUDP}
 	h.seenHostRequestsLock.Lock()
 	h.seenHostRequests[hostRequest] = true
@@ -516,7 +515,7 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 
 	//Flood to network then wait for responses
 	h.floodHostRequest(h.publicAddrRPC, hostRequest)
-	respondedHosts, bestHost := h.waitForBestHost(h.privateAddrUDP, clientLocation, seqNum)
+	respondedHosts, bestHost := h.waitForBestHost(h.privateAddrUDP, clientAddr, seqNum)
 
 	log.Println(respondedHosts) //Array of host IDs that responded to the flooded request
 
@@ -543,17 +542,25 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 }
 
 //Wait for hosts to respond. Then choose the best host
-func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string]string, string) {
-	bestHost := ""
-	bestHostLocation := Location{}
-	currentBestDistance := float64(0)
+func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string]string, string) {
+	bestHostAddr := ""
+	bestHostTime := time.Duration(-1)
 
 	//If this host has no clients, add the host as the best host
 	h.clientLock.Lock()
 	if h.clientAddr == "" {
-		bestHost = h.publicAddrClient
-		bestHostLocation = h.location
-		currentBestDistance = distance(clientLocation, h.location)
+		split := strings.Split(clientAddr, ":")
+		pinger, err := ping.NewPinger(split[0])
+		if err == nil {
+			pinger.Count = 3
+			pinger.Run()
+			stats := pinger.Statistics()
+			bestHostTime = stats.AvgRtt
+			log.Println(stats.AvgRtt)
+			bestHostAddr = h.publicAddrClient
+		} else {
+			log.Println(err)
+		}
 	}
 	h.clientLock.Unlock()
 
@@ -578,30 +585,29 @@ func (h *Host) waitForBestHost(addr string, clientLocation Location, seqNum uint
 		buffer := make([]byte, 1024)
 		n, _, err := l.ReadFromUDP(buffer)
 		if err == nil {
-			hostRequest, err := unMarshallHostRequest(buffer, n)
-			log.Println(hostRequest)
-			h.govecLogger.LogLocalEvent(": Location info from:" + hostRequest.RequestingHost, GovecOptions)
-			if err == nil && hostRequest.SequenceNumber == seqNum {
+			hostResponse, err := unMarshallHostResponse(buffer, n)
+			log.Println(hostResponse)
+			h.govecLogger.LogLocalEvent(": Location info from:" + hostResponse.RequestingHost, GovecOptions)
+			if err == nil && hostResponse.SequenceNumber == seqNum {
 				//If there is currently no best host, set the received host as the best host
-				if bestHostLocation == (Location{}) && hostRequest.BestHost != "" {
-					bestHost = hostRequest.BestHost
-					bestHostLocation = hostRequest.BestHostLocation
-					currentBestDistance = distance(clientLocation, bestHostLocation)
-				} else if bestHostLocation != (Location{}) && hostRequest.BestHost != "" {
-					//Otherwise, check to see if the newly received host is better than the current best host
-					newDistance := distance(clientLocation, hostRequest.BestHostLocation)
-					if newDistance < currentBestDistance {
-						bestHost = hostRequest.BestHost
-						bestHostLocation = hostRequest.BestHostLocation
-						currentBestDistance = distance(clientLocation, bestHostLocation)
+				if bestHostAddr == "" && hostResponse.RespondingHostAddr != "" {
+					bestHostAddr = hostResponse.RespondingHostAddr
+					bestHostTime = hostResponse.AvgRTT
+				} else if bestHostAddr != "" && hostResponse.RespondingHostAddr != "" {
+					baseline := time.Now()
+					currentBest := baseline.Add(bestHostTime)
+					newHostRTT := baseline.Add(hostResponse.AvgRTT)
+					if newHostRTT.Before(currentBest) {
+						bestHostAddr = hostResponse.RespondingHostAddr
+						bestHostTime = hostResponse.AvgRTT
 					}
 				}
-				respondedHosts[hostRequest.RespondingHost] = hostRequest.SenderVerificationLAddr
+				respondedHosts[hostResponse.RespondingHost] = hostResponse.SenderVerificationLAddr
 			}
 		}
 	}
 
-	return respondedHosts, bestHost
+	return respondedHosts, bestHostAddr
 }
 
 //Monitor a host node

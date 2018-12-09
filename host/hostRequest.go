@@ -3,6 +3,7 @@ package host
 import (
 	"bytes"
 	"encoding/gob"
+	"time"
 )
 
 type HostRequestWithSender struct {
@@ -12,11 +13,16 @@ type HostRequestWithSender struct {
 
 type HostRequest struct {
 	SequenceNumber		uint64
-	ClientLocation		Location
-	BestHostLocation	Location
+	ClientAddr			string
 	RequestingHost 		string
-	BestHost			string
+}
+
+type HostResponse struct {
+	SequenceNumber		uint64
+	RequestingHost 		string
+	RespondingHostAddr	string
 	RespondingHost		string
+	AvgRTT				time.Duration
 	SenderVerificationLAddr string
 }
 
@@ -73,15 +79,15 @@ type Parameters struct {
 }
 
 
-func marshallHostRequest(hb HostRequest) ([]byte, error) {
+func marshallHostResponse(hb HostResponse) ([]byte, error) {
 	var network bytes.Buffer
 	enc := gob.NewEncoder(&network)
 	err := enc.Encode(hb)
 	return network.Bytes(), err
 }
 
-func unMarshallHostRequest(buffer []byte, n int) (HostRequest, error) {
-	var hr HostRequest
+func unMarshallHostResponse(buffer []byte, n int) (HostResponse, error) {
+	var hr HostResponse
 	bufDecoder := bytes.NewBuffer(buffer[0:n])
 	decoder := gob.NewDecoder(bufDecoder)
 	decoderErr := decoder.Decode(&hr)
