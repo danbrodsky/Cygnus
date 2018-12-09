@@ -1,5 +1,5 @@
 {
-  "HostID" : "HOsaka",
+  "HostID" : "Host5",
   "PeerHosts" : ["13.77.176.89:8001"],
   "HostPublicIP" : "13.77.176.89",
   "HostPrivateIP" : "10.0.0.4",

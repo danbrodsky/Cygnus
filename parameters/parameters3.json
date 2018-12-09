@@ -1,5 +1,5 @@
 {
-  "HostID" : "HLondon",
+  "HostID" : "Host3",
   "PeerHosts" : ["13.77.176.89:5001", "13.77.176.89:6001"],
   "HostPublicIP" : "13.77.176.89",
   "HostPrivateIP" : "10.0.0.4",
