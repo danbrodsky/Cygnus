@@ -2,6 +2,7 @@ package host
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/DistributedClocks/GoVector/govec"
 	"github.com/DistributedClocks/GoVector/govec/vrpc"
 	"io/ioutil"
@@ -84,6 +85,12 @@ type Host struct {
 	peerTimeouts map[string]uint64
 
 	govecLogger *govec.GoLog
+
+	//Host stream for sending and receiving data to/from client
+	HostStream *HostStream
+
+	//Client stream for sending and receiving data to/from host
+	ClientStream *ClientStream
 }
 
 type HostInterface interface {
@@ -103,6 +110,8 @@ type HostInterface interface {
 	FindHostForClient(clientAddr string, clientLocation Location) string
 	monitorNode(peer string)
 	waitForBestHost(addr string, clientLocation Location, seqNum uint64) (map[string] bool, string)
+	ListenForHostErrors()
+	ListenForClientErrors()
 }
 
 var(
@@ -179,6 +188,11 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 				h.clientAddr = pair.Client
 				h.clientConnected = false
 
+				// Begin streaming and accepting client input
+				// TODO: add channel for receiving errors/disconnects
+				go h.ListenForHostErrors()
+				h.HostStream.ConnectToClient(pair.Client, pair.Host)
+
 				//Will send an ack indicating that the pairing was accepted
 				pairAck = PairAck{
 					SequenceNumber: pair.SequenceNumber,
@@ -217,6 +231,14 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 		}
 	}
 	return nil
+}
+
+func (h *Host) ListenForHostErrors() {
+	select {
+	case err := <-h.HostStream.hostErrorReceived:
+		fmt.Println(err)
+		// TODO: reset host state back to available
+	}
 }
 
 func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error {
@@ -534,12 +556,24 @@ func (h *Host) FindHostForClient(clientId string, clientAddr string, clientLocat
 	accept := h.sendHostClientPair(clientAddr, bestHost)
 	if accept {
 		log.Println("Host " + bestHost + " has agreed to accept client " + clientAddr)
+
+		// make ClientStream begin sending/receiving from best host
+		go h.ListenForClientErrors()
+		h.ClientStream.ConnectToHost(clientAddr, bestHost)
 	} else {
 		log.Println("Host " + bestHost + " won't accept client " + clientAddr)
 	}
 	//TODO: Do something with the return of 'accept'. If the target host doesn't accept, find another one?
 
 	return bestHost
+}
+
+func (h *Host) ListenForClientErrors() {
+	select {
+	case err := <-h.ClientStream.clientErrorReceived:
+		fmt.Println(err)
+		// TODO: reset client state back to available
+	}
 }
 
 //Wait for hosts to respond. Then choose the best host
@@ -782,6 +816,12 @@ func Initialize(paramsPath string) (*Host) {
 	h.ackWaitChan = make(map[uint64]chan bool)
 	h.seenPairAcks = make(map[PairAck] bool)
 	h.pairAcksLock  = sync.Mutex{}
+
+	// initialize the host streaming service
+	h.HostStream = &HostStream{}
+
+	//initialize the client streaming service
+	h.ClientStream = &ClientStream{}
 
 	for _, peer := range params.PeerHosts {
 		h.addPeer(peer)
