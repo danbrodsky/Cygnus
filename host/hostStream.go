@@ -3,6 +3,8 @@ package host
 import (
 	"bufio"
 	"context"
+    "encoding/json"
+    "strconv"
 	"fmt"
 	"log"
 	"net"
@@ -55,7 +57,26 @@ func (hs *HostStream) ReceiveInputFromClient() {
 						return
 					}
 				} else { timeout = time.Now().Add(hs.StreamToleranceTime) }
-				fmt.Printf(line)
+				if line != "" {
+					var ie InputEvent
+					err := json.Unmarshal([]byte(line), &ie)
+					if err != nil {
+						fmt.Println("error decoding", line, err)
+					}
+					fmt.Printf("Received event: %+v\n", ie)
+                    var verb string
+                    switch ie.Type {
+                    case 2:
+                        verb = "keydown"
+                    case 3:
+                        verb = "keyup"
+                    default:
+                        verb = ""
+                    }
+                    if verb != "" {
+                        exec.Command("xdotool", verb, strconv.Itoa(ie.Keycode)).Start()
+                    }
+				}
 			}
 		}
 	case <-time.After(hs.StreamToleranceTime):

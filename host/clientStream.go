@@ -2,8 +2,9 @@ package host
 
 import (
 	"bufio"
-	"bytes"
+    "strconv"
 	"context"
+    "encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -41,12 +42,15 @@ func (cs *ClientStream) SendInputToHost() {
 	c := make(chan InputEvent)
 	go cs.grabInput(c)
 	for ie := range c {
-		conn.Write([]byte(ie.data + "\n"))
+		b, _ := json.Marshal(&ie)
+		conn.Write(b)
+		conn.Write([]byte("\n"))
 	}
 }
 
 type InputEvent struct {
-	data string
+	Type    int
+	Keycode int
 }
 
 func (cs *ClientStream) grabInput(c chan InputEvent) {
@@ -57,22 +61,44 @@ func (cs *ClientStream) grabInput(c chan InputEvent) {
 	xevCommand.Start()
 
 	scanner := bufio.NewScanner(stdout)
-	var buffer bytes.Buffer
+    var current *InputEvent
 	for scanner.Scan() {
+		select {
+		case <-cs.stopSendingToHost:
+			fmt.Println("STOP SENDING TO HOST")
+			close(c)
+			return
+		default:
+		}
 		m := strings.TrimSpace(scanner.Text())
-		if m != "" {
-			buffer.WriteString(m)
-			buffer.WriteString(" ")
-		} else {
-			select {
-			case <-cs.stopSendingToHost:
-				fmt.Println("STOP SENDING TO HOST")
-				close(c)
-				return
-			default:
-				c <- InputEvent{data: buffer.String()}
-				buffer.Reset()
+		fields := strings.Fields(m)
+
+		if len(fields) > 0 && fields[0] == "EVENT" {
+			// new event starts => send old and reset
+			if current != nil {
+				c <- *current
 			}
+			current = &InputEvent{}
+			current.Type, _ = strconv.Atoi(fields[2])
+			//println("event starts", m)
+		} else {
+			if current == nil {
+				// haven't seen an event yet so skip ahead until first EVENT
+				continue
+			}
+			if m == "" {
+				// blank line => send what we have
+				if current != nil {
+					c <- *current
+				}
+				current = &InputEvent{}
+				continue
+			}
+			if fields[0] == "detail:" {
+				current.Keycode, _ = strconv.Atoi(fields[1])
+			}
+			//println("event continues", m)
+
 		}
 	}
 	xevCommand.Wait()
