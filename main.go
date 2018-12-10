@@ -88,7 +88,19 @@ func ReceiveInputFromClient() {
 					if err != nil {
 						fmt.Println("error decoding", line, err)
 					}
-					fmt.Printf("Received event: %+v", ie)
+					fmt.Printf("Received event: %+v\n", ie)
+                    var verb string
+                    switch ie.Type {
+                    case 2:
+                        verb = "keydown"
+                    case 3:
+                        verb = "keyup"
+                    default:
+                        verb = ""
+                    }
+                    if verb != "" {
+                        exec.Command("xdotool", verb, strconv.Itoa(ie.Keycode)).Start()
+                    }
 				}
 			}
 		}
