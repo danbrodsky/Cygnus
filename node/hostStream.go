@@ -21,6 +21,7 @@ type HostStream struct {
 	StreamToleranceTime time.Duration // time until stream considered disconnected
 	stopSendingToClient chan bool     // host signal to stop ongoing goroutines on connection close
 	hostErrorReceived   chan string   // host error for indicating that client is disconnected
+	logStreamTime		chan LedgerEntry
 }
 
 // starts a server that accepts input events from clients
@@ -43,17 +44,36 @@ func (hs *HostStream) ReceiveInputFromClient() {
 	select {
 	case c := <-conns:
 		timeout := time.Now().Add(hs.StreamToleranceTime)
+
+		//Start logging time
+		startTime := time.Now()
 		for {
 			select {
 			case <-hs.stopSendingToClient:
 				fmt.Println("input connection with client closed")
+
+				//Log time on connection closed
+				entry := LedgerEntry{ClientId: hs.ClientIpPort, StartTime: startTime, EndTime: time.Now()}
+				hs.logStreamTime <- entry
 				return
 			default:
+				//Log time every five minutes
+				if time.Now().After(startTime.Add(time.Minute * 5)) {
+					endTime := time.Now()
+					entry := LedgerEntry{ClientId: hs.ClientIpPort, StartTime: startTime, EndTime: endTime}
+					startTime = endTime
+					hs.logStreamTime <- entry
+				}
+
 				line, err := bufio.NewReader(c).ReadString('\n')
 				if err != nil {
 					if timeout.Sub(time.Now()) < 0 * time.Second {
 						hs.hostErrorReceived <- "timeout while receiving inputs from client"
 						hs.stopSendingToClient <- true
+
+						//Log time on input timeout
+						entry := LedgerEntry{ClientId: hs.ClientIpPort, StartTime: startTime, EndTime: time.Now()}
+						hs.logStreamTime <- entry
 						return
 					}
 				} else { timeout = time.Now().Add(hs.StreamToleranceTime) }
@@ -111,6 +131,7 @@ func (hs *HostStream) SendStreamToClient() {
 func (hs *HostStream) ConnectToClient(clientIpPort string, hostInputIpPort string) {
 	hs.stopSendingToClient = make(chan bool, 2)
 	hs.hostErrorReceived = make(chan string, 2)
+	hs.logStreamTime = make(chan LedgerEntry)
 
 	hs.ClientIpPort = clientIpPort
 	hs.HostInputIpPort = hostInputIpPort

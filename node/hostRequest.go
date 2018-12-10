@@ -58,6 +58,13 @@ type DecisionMessage struct{
         Decision bool
 }
 
+type LedgerEntry struct {
+	HostId string
+	ClientId string
+	StartTime time.Time
+	EndTime time.Time
+}
+
 type Parameters struct {
 		NodeID            			string   	`json:"NodeID"`
         PeerHosts         			[]string 	`json:"PeerHosts"`

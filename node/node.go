@@ -88,12 +88,17 @@ type Node struct {
 
 	//Client stream for sending and receiving data to/from host
 	ClientStream *ClientStream
+
+	Ledger []LedgerEntry
+	seenLedgerEntries map[LedgerEntry] bool
+	ledgerLock sync.Mutex
 }
 
 type NodeInterface interface {
 	ReceiveHeartBeat(hb *HeartBeat, reply *int) error
 	ReceiveACK(ack *Ack, reply *int) error
 	RpcAddPeer(ip string, reply *int) error
+	ReceiveLedgerEntry(ledgerEntry LedgerEntry, reply *int) error
 	ReceivePairAck(pair PairAck, reply *int) error
 	ReceivePair(pair HostClientPair, reply *int) error
 	ReceiveHostRequest(args HostRequestWithSender, reply *int) error
@@ -108,6 +113,8 @@ type NodeInterface interface {
 	monitorNode(peer string)
 	waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string] string, string, string)
 	ListenForHostErrors()
+	listenForStreamingTime()
+	floodLedgerEntry(entry LedgerEntry)
 	ListenForClientErrors(clientAddr string)
 }
 
@@ -151,6 +158,20 @@ func (h *Node) RpcAddPeer(ip string, reply *int) error {
 }
 
 //Receive an acknowledgement for a client-host pairing
+func (h *Node) ReceiveLedgerEntry(ledgerEntry LedgerEntry, reply *int) error {
+	h.ledgerLock.Lock()
+	defer h.ledgerLock.Unlock()
+
+	_, ok := h.seenLedgerEntries[ledgerEntry]
+	if !ok {
+		h.Ledger = append(h.Ledger, ledgerEntry)
+		h.floodLedgerEntry(ledgerEntry)
+	}
+	return nil
+}
+
+
+//Receive an acknowledgement for a client-host pairing
 func (h *Node) ReceivePairAck(pairAck PairAck, reply *int) error {
 	h.pairAcksLock.Lock()
 	defer h.pairAcksLock.Unlock()
@@ -191,6 +212,7 @@ func (h *Node) ReceivePair(pair HostClientPair, reply *int) error {
 
 				// Begin streaming and accepting client input
 				go h.ListenForHostErrors()
+
 				h.HostStream.ConnectToClient(pair.Client, pair.Host)
 
 				//Will send an ack indicating that the pairing was accepted
@@ -232,6 +254,29 @@ func (h *Node) ListenForHostErrors() {
 		h.clientConnected = false
 		h.clientLock.Unlock()
 		// TODO: reset host state back to available
+	}
+}
+
+func (h *Node) listenForStreamingTime() {
+	select {
+	case streamTime := <- h.HostStream.logStreamTime:
+		h.ledgerLock.Lock()
+		entry := LedgerEntry{HostId: h.nodeID, ClientId: streamTime.ClientId, StartTime: streamTime.StartTime, EndTime: streamTime.EndTime}
+		h.Ledger = append(h.Ledger, entry)
+		h.seenLedgerEntries[entry] = true
+		h.ledgerLock.Unlock()
+
+		h.floodLedgerEntry(entry)
+	}
+}
+
+func (h *Node) floodLedgerEntry(entry LedgerEntry) {
+	h.peerLock.Lock()
+	defer h.peerLock.Unlock()
+
+	for _, client := range h.peers {
+		var reply int
+		client.Go("Host.ReceiveLedgerEntry", entry, reply, nil)
 	}
 }
 
@@ -800,6 +845,9 @@ func Initialize(paramsPath string) (*Node) {
 	h.ClientStream = &ClientStream{}
 
 	h.clientConnected = !params.Available
+	h.Ledger = make([]LedgerEntry,0)
+	h.seenLedgerEntries = make(map[LedgerEntry] bool)
+	h.ledgerLock = sync.Mutex{}
 
 	for _, peer := range params.PeerHosts {
 		h.addPeer(peer)
@@ -807,6 +855,7 @@ func Initialize(paramsPath string) (*Node) {
 	h.setUpMessageRPC()
 	h.notifyPeers()
 	go h.handleVerificationRequests()
+	go h.listenForStreamingTime()
 
 	return h
 }
