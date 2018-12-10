@@ -123,8 +123,3 @@ func (hs *HostStream) ConnectToClient(clientIpPort string, hostInputIpPort strin
 	go hs.ReceiveInputFromClient()
 	go hs.SendStreamToClient()
 }
-
-
-
-// TODO: Add state controllers for host and client
-// TODO: Combine host and client with host network code
