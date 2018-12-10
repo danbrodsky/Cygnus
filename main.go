@@ -32,8 +32,8 @@ var (
 func main() {
 	ClientIpPort = "127.0.0.1:1234"
 	HostInputIpPort = "127.0.0.1:1235"
-	Resolution = "1280x800"
-	Display = ":1"
+	Resolution = "1920x1080"
+	Display = ":0"
 	Framerate = "60"
 	SdpFileName = "StreamConfig.sdp"
 
