@@ -70,10 +70,10 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/node/clientStream.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1478">
+            <state relative-caret-position="2760">
               <caret line="195" column="1" selection-start-line="195" selection-start-column="1" selection-end-line="195" selection-end-column="1" />
             </state>
           </provider>
@@ -83,15 +83,15 @@
         <entry file="file://$PROJECT_DIR$/node/hostRequest.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="960">
-              <caret line="68" column="76" lean-forward="true" selection-start-line="68" selection-start-column="76" selection-end-line="68" selection-end-column="76" />
+              <caret line="68" column="76" selection-start-line="68" selection-start-column="76" selection-end-line="68" selection-end-column="76" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/node/hostStream.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="533">
+            <state relative-caret-position="1523">
               <caret line="124" column="1" selection-start-line="124" selection-start-column="1" selection-end-line="124" selection-end-column="1" />
             </state>
           </provider>
@@ -222,10 +222,9 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-2" y="-22" width="1924" height="1104" extended-state="6" />
-    <editor active="true" />
+    <frame x="0" y="0" width="640" height="1060" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49926144" visible="true" weight="0.1189968" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49926144" visible="true" weight="0.3779661" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" sideWeight="0.50073856" side_tool="true" weight="0.1189968" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -237,7 +236,7 @@
       <window_info anchor="bottom" id="TODO" order="6" weight="0.3299389" />
       <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" />
-      <window_info anchor="bottom" id="Terminal" order="9" visible="true" weight="0.30847803" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="9" visible="true" weight="0.32299465" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -475,17 +474,10 @@
     <entry file="file://$PROJECT_DIR$/README.md">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/node/hostStream.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="533">
-          <caret line="124" column="1" selection-start-line="124" selection-start-column="1" selection-end-line="124" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/node/hostRequest.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="960">
-          <caret line="68" column="76" lean-forward="true" selection-start-line="68" selection-start-column="76" selection-end-line="68" selection-end-column="76" />
+          <caret line="68" column="76" selection-start-line="68" selection-start-column="76" selection-end-line="68" selection-end-column="76" />
         </state>
       </provider>
     </entry>
@@ -496,8 +488,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/node/clientStream.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1478">
+        <state relative-caret-position="2760">
           <caret line="195" column="1" selection-start-line="195" selection-start-column="1" selection-end-line="195" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/node/hostStream.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1523">
+          <caret line="124" column="1" selection-start-line="124" selection-start-column="1" selection-end-line="124" selection-end-column="1" />
         </state>
       </provider>
     </entry>
