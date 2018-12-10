@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -23,15 +25,15 @@ var (
 	stopSendingToHost   chan bool     // client signal to stop ongoing goroutines on connection close
 	stopSendingToClient chan bool     // host signal to stop ongoing goroutines on connection close
 
-	hostErrorReceived   chan string   // host error for indicating that client is disconnected
-	clientErrorReceived chan string   // client error for indicating that host is disconnected
+	hostErrorReceived   chan string // host error for indicating that client is disconnected
+	clientErrorReceived chan string // client error for indicating that host is disconnected
 )
 
 func main() {
 	ClientIpPort = "127.0.0.1:1234"
 	HostInputIpPort = "127.0.0.1:1235"
-	Resolution = "1920x1080"
-	Display = ":0"
+	Resolution = "1280x800"
+	Display = ":1"
 	Framerate = "60"
 	SdpFileName = "StreamConfig.sdp"
 
@@ -40,7 +42,7 @@ func main() {
 	ConnectToHost()
 	ConnectToClient()
 	go CheckClientHostErrors()
-	time.Sleep(100*time.Second)
+	time.Sleep(100 * time.Second)
 }
 
 // starts a server that accepts input events from clients
@@ -71,14 +73,23 @@ func ReceiveInputFromClient() {
 			default:
 				line, err := bufio.NewReader(c).ReadString('\n')
 				if err != nil {
-					fmt.Println(timeout.Sub(time.Now()) )
-					if timeout.Sub(time.Now()) < 0 * time.Second {
+					//fmt.Println(timeout.Sub(time.Now()) )
+					if timeout.Sub(time.Now()) < 0*time.Second {
 						hostErrorReceived <- "timeout while receiving inputs from client"
 						stopSendingToClient <- true
 						return
 					}
-				} else { timeout = time.Now().Add(10 * time.Second) }
-				fmt.Printf(line)
+				} else {
+					timeout = time.Now().Add(10 * time.Second)
+				}
+				if line != "" {
+					var ie InputEvent
+					err := json.Unmarshal([]byte(line), &ie)
+					if err != nil {
+						fmt.Println("error decoding", line, err)
+					}
+					fmt.Printf("Received event: %+v", ie)
+				}
 			}
 		}
 	case <-time.After(10 * time.Second):
@@ -93,7 +104,7 @@ func SendInputToHost() {
 	var conn net.Conn
 	timeout := time.Now().Add(10 * time.Second)
 	for {
-		if timeout.Sub(time.Now()) < 0 * time.Second {
+		if timeout.Sub(time.Now()) < 0*time.Second {
 			clientErrorReceived <- "could not reach host key event port"
 			return
 		}
@@ -107,38 +118,65 @@ func SendInputToHost() {
 	c := make(chan InputEvent)
 	go GrabInput(c)
 	for ie := range c {
-		conn.Write([]byte(ie.data + "\n"))
+		b, _ := json.Marshal(&ie)
+		conn.Write(b)
+		conn.Write([]byte("\n"))
 	}
 }
 
 type InputEvent struct {
-	data string
+	Type    int
+	Keycode int
 }
 
 func GrabInput(c chan InputEvent) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // calling cancel() kills the exec command
 	xevCommand := exec.CommandContext(ctx, "xinput", "test-xi2", "--root")
+	xevCommand.Env = os.Environ()
+	xevCommand.Env = append(xevCommand.Env, "DISPLAY="+Display)
 	stdout, err := xevCommand.StdoutPipe()
 	xevCommand.Start()
 
 	scanner := bufio.NewScanner(stdout)
-	var buffer bytes.Buffer
+	var current *InputEvent
 	for scanner.Scan() {
+		select {
+		case <-stopSendingToHost:
+			fmt.Println("STOP SENDING TO HOST")
+			close(c)
+			return
+		default:
+		}
 		m := strings.TrimSpace(scanner.Text())
-		if m != "" {
-			buffer.WriteString(m)
-			buffer.WriteString(" ")
-		} else {
-			select {
-			case <-stopSendingToHost:
-				fmt.Println("STOP SENDING TO HOST")
-				close(c)
-				return
-			default:
-				c <- InputEvent{data: buffer.String()}
-				buffer.Reset()
+		fields := strings.Fields(m)
+
+		if len(fields) > 0 && fields[0] == "EVENT" {
+			// new event starts => send old and reset
+			if current != nil {
+				c <- *current
 			}
+			current = &InputEvent{}
+			current.Type, _ = strconv.Atoi(fields[2])
+			//println("event starts", m)
+		} else {
+			if current == nil {
+				// haven't seen an event yet so skip ahead until first EVENT
+				continue
+			}
+			if m == "" {
+				// blank line => send what we have
+				if current != nil {
+					c <- *current
+				}
+				current = &InputEvent{}
+				continue
+			}
+			if fields[0] == "detail:" {
+				current.Keycode, _ = strconv.Atoi(fields[1])
+			}
+			//println("event continues", m)
+
 		}
 	}
 	xevCommand.Wait()
@@ -214,7 +252,6 @@ func ReceiveHostStream() {
 		log.Fatal(err)
 	}
 
-
 }
 
 // get new host for client
@@ -226,9 +263,9 @@ func FindNewHost() {
 func CheckClientHostErrors() {
 	for {
 		select {
-		case err := <- hostErrorReceived:
+		case err := <-hostErrorReceived:
 			fmt.Println(err)
-		case err:= <- clientErrorReceived:
+		case err := <-clientErrorReceived:
 			fmt.Println(err)
 		}
 	}
@@ -255,6 +292,7 @@ func ConnectToClient() {
 // Signals to cancel stream if no frame in StreamToleranceTime
 
 var videoPacket = false
+
 func ReceiveHostData(s string) int {
 	// 0 if 0kB video packet, 1 if NkB video packet, -1 otherwise
 
