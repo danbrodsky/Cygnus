@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"../host"
+	"../node"
 	"testing"
 )
 
@@ -15,7 +15,7 @@ func TestFlooding(t *testing.T) {
 	//host.Initialize("../parameters/parameters2.json") //Berlin
 	//host.Initialize("../parameters/parameters3.json") //London
 	//host.Initialize("../parameters/parameters4.json") //Beijing
-	host5 := host.Initialize("../parameters/parameters5.json") //Osaka
+	host5 := node.Initialize("../parameters/parameters5.json") //Osaka
 	//host.Initialize("../parameters/parameters6.json") //Seattle
 
 	expectedHost := "127.0.0.1:5000"

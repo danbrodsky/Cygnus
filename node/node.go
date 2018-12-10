@@ -1,4 +1,4 @@
-package host
+package node
 
 import (
 	"bytes"
@@ -22,10 +22,10 @@ const MaxTimeouts = 3
 const DEBUG_CONSENSUS_ACCEPTER = true
 const DEBUG_CONSENSUS_PROPOSER = true
 
-type Host struct {
-	hostID string
+type Node struct {
+	nodeID string
 
-	// public ip of host
+	// public ip of node
 	publicIp string
 
 	//For other hosts to connect using RPC
@@ -37,10 +37,9 @@ type Host struct {
 	publicAddrUDP  string
 
 	//Used to connect to client
-	privateAddrClient string
 	publicAddrClient  string
 
-	//Used to recieve consensus connection
+	//Used to receive consensus connection
 	publicVerificationPortIp string
 	privateVerificationPortIp string
 	privateVerificationReturnPortIp string
@@ -91,7 +90,7 @@ type Host struct {
 	ClientStream *ClientStream
 }
 
-type HostInterface interface {
+type NodeInterface interface {
 	ReceiveHeartBeat(hb *HeartBeat, reply *int) error
 	ReceiveACK(ack *Ack, reply *int) error
 	RpcAddPeer(ip string, reply *int) error
@@ -117,7 +116,7 @@ var(
 )
 
 //Receive a heart beat from another host
-func (h *Host) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
+func (h *Node) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
 	//log.Println(h.publicAddrRPC + " Received HeartBeat from " + hb.Sender + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
 
 	h.failureDetectorLock.Lock()
@@ -135,7 +134,7 @@ func (h *Host) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
 }
 
 //Receive an ack from another host
-func (h *Host) ReceiveACK(ack *Ack, reply *int) error {
+func (h *Node) ReceiveACK(ack *Ack, reply *int) error {
 	//log.Println(h.publicAddrRPC + " Received ACK from " + ack.Sender + " Seq num: " + strconv.Itoa(int(ack.HBeatSeqNum)))
 
 	h.failureDetectorLock.Lock()
@@ -146,13 +145,13 @@ func (h *Host) ReceiveACK(ack *Ack, reply *int) error {
 
 
 //Add peer to this host's peer list
-func (h *Host) RpcAddPeer(ip string, reply *int) error {
+func (h *Node) RpcAddPeer(ip string, reply *int) error {
 	h.addPeer(ip)
 	return nil
 }
 
 //Receive an acknowledgement for a client-host pairing
-func (h *Host) ReceivePairAck(pairAck PairAck, reply *int) error {
+func (h *Node) ReceivePairAck(pairAck PairAck, reply *int) error {
 	h.pairAcksLock.Lock()
 	defer h.pairAcksLock.Unlock()
 
@@ -169,19 +168,19 @@ func (h *Host) ReceivePairAck(pairAck PairAck, reply *int) error {
 }
 
 //Receive a client-host pairing
-func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
+func (h *Node) ReceivePair(pair HostClientPair, reply *int) error {
 	h.seenPairingsLock.Lock()
 	_, ok := h.seenPairings[pair]
 	h.seenPairings[pair] = true
 	h.seenPairingsLock.Unlock()
-	fmt.Println("received client request at: " + h.hostID)
+	fmt.Println("received client request at: " + h.nodeID)
 
 	//If we haven't seen the message before, check if we are the host that is being paired
 	if !ok {
 		if pair.Host == h.publicAddrClient {
 			h.clientLock.Lock()
 			var pairAck PairAck
-			fmt.Println("host being paired: " + h.hostID)
+			fmt.Println("host being paired: " + h.nodeID)
 
 
 			//Only accept if we are currently available
@@ -223,7 +222,7 @@ func (h *Host) ReceivePair(pair HostClientPair, reply *int) error {
 	return nil
 }
 
-func (h *Host) ListenForHostErrors() {
+func (h *Node) ListenForHostErrors() {
 	select {
 	case err := <-h.HostStream.hostErrorReceived:
 		fmt.Println(err)
@@ -236,7 +235,7 @@ func (h *Host) ListenForHostErrors() {
 	}
 }
 
-func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error {
+func (h *Node) ReceiveHostRequest(args HostRequestWithSender, reply *int) error {
 	hostRequest := args.Request
 
 	h.seenHostRequestsLock.Lock()
@@ -254,7 +253,7 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 				SequenceNumber: hostRequest.SequenceNumber,
 				RequestingHost: hostRequest.RequestingHost,
 				RespondingHostAddr: respondingHostAddr,
-				RespondingHost: h.hostID,
+				RespondingHost: h.nodeID,
 				AvgRTT: avgRtt,
 				SenderVerificationLAddr: h.publicVerificationPortIp,
 			}
@@ -291,7 +290,7 @@ func (h *Host) ReceiveHostRequest(args HostRequestWithSender, reply *int) error 
 }
 
 //Handle RPC messages
-func (h *Host) setUpMessageRPC() {
+func (h *Node) setUpMessageRPC() {
 	handler := rpc.NewServer()
 	handler.Register(h)
 
@@ -303,7 +302,7 @@ func (h *Host) setUpMessageRPC() {
 }
 
 //Notify peers that this host has joined
-func (h *Host) notifyPeers() {
+func (h *Node) notifyPeers() {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
 	for peer := range h.peers {
@@ -316,7 +315,7 @@ func (h *Host) notifyPeers() {
 }
 
 //Add a peer to the peers list
-func (h *Host) addPeer(ip string) {
+func (h *Node) addPeer(ip string) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
 
@@ -333,7 +332,7 @@ func (h *Host) addPeer(ip string) {
 }
 
 //Send the pair ack to all peers
-func (h *Host) floodPairAck(pairAck PairAck) {
+func (h *Node) floodPairAck(pairAck PairAck) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
 
@@ -344,7 +343,7 @@ func (h *Host) floodPairAck(pairAck PairAck) {
 }
 
 //Send the host request to all peers
-func (h *Host) floodHostRequest(sender string, hostRequest HostRequest) {
+func (h *Node) floodHostRequest(sender string, hostRequest HostRequest) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
 	for peer, client := range h.peers {
@@ -359,7 +358,7 @@ func (h *Host) floodHostRequest(sender string, hostRequest HostRequest) {
 }
 
 //Send the client host pair to all peers
-func (h *Host) floodHostClientPair(pair HostClientPair) {
+func (h *Node) floodHostClientPair(pair HostClientPair) {
 	h.peerLock.Lock()
 	defer h.peerLock.Unlock()
 
@@ -371,7 +370,7 @@ func (h *Host) floodHostClientPair(pair HostClientPair) {
 
 
 //After consensus is done for the client-host pairing, call this function to send the pairing to all hosts
-func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) bool {
+func (h *Node) sendHostClientPair(clientAddr string, hostAddr string) bool {
 	h.seqNumberLockHC.Lock()
 	seqNum := h.currSeqNumberHC
 	h.currSeqNumberHC++
@@ -408,7 +407,7 @@ func (h *Host) sendHostClientPair(clientAddr string, hostAddr string) bool {
 //CONSENSES PROPOSE METHODS
 
 // Ask hosts that responded to the flooding for agreement to accept client
-func (h *Host) askForAgreement(hostId string,respondedHosts map[string]string) bool{
+func (h *Node) askForAgreement(hostId string,respondedHosts map[string]string) bool{
 	conn,err := getConnection(h.privateVerificationReturnPortIp)
 	if err != nil {
                 log.Fatal(err)
@@ -425,7 +424,7 @@ func (h *Host) askForAgreement(hostId string,respondedHosts map[string]string) b
 }
 
 // Sends a single propose message to host
-func (h *Host) proposeAcceptence(remoteIpPort string, vm VerificationMesssage){
+func (h *Node) proposeAcceptence(remoteIpPort string, vm VerificationMesssage){
         conn, err := net.Dial("udp", remoteIpPort)
         if err != nil {
                 log.Printf("Cannot resolve UDPAddress: Error %s\n", err)
@@ -512,7 +511,7 @@ func getConnection(ip string) (conn *net.UDPConn, err error) {
 }
 
 //TODO: this method probably doesn't need to be capitalized. Only is capitalize right now for testing purposes
-func (h *Host) FindHostForClient(clientAddr string) {
+func (h *Node) FindHostForClient(clientAddr string) {
 	fmt.Println("finding new host")
 	h.seqNumberLockHR.Lock()
 	seqNum := h.currSeqNumberHR
@@ -562,7 +561,7 @@ func (h *Host) FindHostForClient(clientAddr string) {
 	}
 }
 
-func (h *Host) ListenForClientErrors(clientAddr string) {
+func (h *Node) ListenForClientErrors(clientAddr string) {
 	select {
 	case err := <-h.ClientStream.clientErrorReceived:
 		fmt.Println(err)
@@ -573,7 +572,7 @@ func (h *Host) ListenForClientErrors(clientAddr string) {
 }
 
 //Wait for hosts to respond. Then choose the best host
-func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string]string, string, string) {
+func (h *Node) waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string]string, string, string) {
 	bestHostAddr := ""
 	bestHostId   := ""
 	bestHostTime := time.Duration(1*time.Minute)
@@ -631,7 +630,7 @@ func (h *Host) waitForBestHost(addr string, clientAddr string, seqNum uint64) (m
 }
 
 //Monitor a host node
-func (h *Host) monitorNode(peer string) {
+func (h *Node) monitorNode(peer string) {
 	//log.Println("Begin monitoring: " + peer)
 
 	seqNum := uint64(0)
@@ -674,7 +673,7 @@ func (h *Host) monitorNode(peer string) {
 			seqNum += 1
 	}
 	h.peerLock.Lock()
-	log.Println(h.hostID + "- peer has failed: " + peer)
+	log.Println(h.nodeID + "- peer has failed: " + peer)
 	delete(h.peers, peer)
 	h.peerLock.Unlock()
 }
@@ -686,7 +685,7 @@ func concatIp(ip string, port string) string {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //CONSENSUS ACCEPTER METHODS
-func (h *Host) handleVerificationRequests(){
+func (h *Node) handleVerificationRequests(){
 	conn, err := getConnection(h.privateVerificationPortIp)
 	if err != nil {
                 log.Fatal(err)
@@ -717,9 +716,9 @@ func (h *Host) handleVerificationRequests(){
 	}
 }
 
-func (h *Host) respondDecision(vm VerificationMesssage){
+func (h *Node) respondDecision(vm VerificationMesssage){
 	// TODO filter with blacklist
-	dm := DecisionMessage{HostId: h.hostID, Decision:true}
+	dm := DecisionMessage{HostId: h.nodeID, Decision:true}
 	for _,v := range h.blackList {
 		if(v == vm.HostId){
 			dm.Decision = false
@@ -744,7 +743,7 @@ func (h *Host) respondDecision(vm VerificationMesssage){
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func Initialize(paramsPath string) (*Host) {
+func Initialize(paramsPath string) (*Node) {
 	var params Parameters
 	jsonFile, err := os.Open(paramsPath)
 	if err != nil {
@@ -755,22 +754,21 @@ func Initialize(paramsPath string) (*Host) {
 	json.Unmarshal(byteValue, &params)
 	log.Println(params)
 
-	h := &Host{}
-	h.hostID = params.HostID
+	h := &Node{}
+	h.nodeID = params.NodeID
 	h.blackList = params.BlackList
 
 	h.privateAddrRPC = concatIp(params.HostPrivateIP, params.HostsPortRPC)
 	h.publicAddrRPC = concatIp(params.HostPublicIP, params.HostsPortRPC)
 	h.privateAddrUDP = concatIp(params.HostPrivateIP, params.HostsPortUDP)
 	h.publicAddrUDP = concatIp(params.HostPublicIP, params.HostsPortUDP)
-	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
 
 	h.privateVerificationPortIp = concatIp(params.HostPrivateIP, params.VerificationPortUDP)
 	h.publicVerificationPortIp = concatIp(params.HostPublicIP, params.VerificationPortUDP)
 	h.privateVerificationReturnPortIp = concatIp(params.HostPrivateIP, params.VerificationReturnPortUDP)
 
-	h.govecLogger = govec.InitGoVector(params.HostID, "./logs/" + params.HostID, govec.GetDefaultConfig())
+	h.govecLogger = govec.InitGoVector(params.NodeID, "./logs/" + params.NodeID, govec.GetDefaultConfig())
 
 	h.peers = make(map[string]*rpc.Client)
 	h.peerLock = sync.Mutex{}

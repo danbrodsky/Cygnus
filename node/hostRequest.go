@@ -1,4 +1,4 @@
-package host
+package node
 
 import (
 	"bytes"
@@ -59,7 +59,7 @@ type DecisionMessage struct{
 }
 
 type Parameters struct {
-        HostID            			string   	`json:"HostID"`
+		NodeID            			string   	`json:"NodeID"`
         PeerHosts         			[]string 	`json:"PeerHosts"`
         HostPublicIP      			string   	`json:"HostPublicIP"`
         HostPrivateIP     			string   	`json:"HostPrivateIP"`

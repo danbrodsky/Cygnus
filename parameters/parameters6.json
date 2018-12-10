@@ -1,5 +1,5 @@
 {
-  "HostID" : "Host6",
+  "NodeID" : "Host6",
   "PeerHosts" : ["127.0.0.1:8001"],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
@@ -10,5 +10,4 @@
   "VerificationReturnPortUDP": "4004",
   "BlackList": [],
   "Available": true
-
 }

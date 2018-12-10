@@ -1,5 +1,5 @@
 {
-  "HostID" : "Host2",
+  "NodeID" : "Host2",
   "PeerHosts" : [],
   "HostPublicIP" : "127.0.0.1",
   "HostPrivateIP" : "127.0.0.1",
