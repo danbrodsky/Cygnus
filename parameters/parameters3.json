@@ -9,5 +9,6 @@
   "VerificationPortUDP": "7003",
   "VerificationReturnPortUDP": "7004",
   "BlackList": [],
-  "Available": true
+  "Available": true,
+  "LedgerPort": "7005"
 }
