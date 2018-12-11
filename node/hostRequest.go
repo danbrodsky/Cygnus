@@ -76,7 +76,6 @@ type Parameters struct {
         VerificationPortUDP      	string   	`json:"VerificationPortUDP"`
         VerificationReturnPortUDP	string		`json:"VerificationReturnPortUDP"`
         BlackList         			[]string  	`json:"BlackList"`
-        Available					bool		`json:"Available"`
 		LedgerPort					string		`json:"LedgerPort"`
 }
 

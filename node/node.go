@@ -108,7 +108,7 @@ type NodeInterface interface {
 	floodHostRequest(sender string, hostRequest HostRequest)
 	floodHostClientPair(pair HostClientPair)
 	sendHostClientPair(clientAddr string, hostAddr string) bool
-	FindHostForClient(clientAddr string)
+	findHostForClient(clientAddr string)
 	monitorNode(peer string)
 	waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string] string, string, string)
 	ListenForHostErrors()
@@ -594,8 +594,7 @@ func getConnection(ip string) (conn *net.UDPConn, err error) {
 	return l, nil
 }
 
-//TODO: this method probably doesn't need to be capitalized. Only is capitalize right now for testing purposes
-func (h *Node) FindHostForClient(clientAddr string) {
+func (h *Node) findHostForClient(clientAddr string) {
 	fmt.Println("finding new host")
 	h.seqNumberLockHR.Lock()
 	seqNum := h.currSeqNumberHR
@@ -650,7 +649,7 @@ func (h *Node) ListenForClientErrors(clientAddr string) {
 	case err := <-h.ClientStream.clientErrorReceived:
 		fmt.Println(err)
 		time.Sleep(10 * time.Second)
-		h.FindHostForClient(clientAddr)
+		h.findHostForClient(clientAddr)
 		// TODO: reset client state back to available
 	}
 }
@@ -827,7 +826,7 @@ func (h *Node) respondDecision(vm VerificationMesssage){
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func Initialize(paramsPath string) (*Node) {
+func Initialize(paramsPath string, isHost bool) (*Node) {
 	var params Parameters
 	jsonFile, err := os.Open(paramsPath)
 	if err != nil {
@@ -882,8 +881,7 @@ func Initialize(paramsPath string) (*Node) {
 
 	//initialize the client streaming service
 	h.ClientStream = &ClientStream{}
-
-	h.clientConnected = !params.Available
+	h.clientConnected = !isHost
 	h.Ledger = &Ledger{
 		LedgerEntries: make([]LedgerEntry,0),
 		seenLedgerEntries: make(map[LedgerEntry] bool),
@@ -899,5 +897,9 @@ func Initialize(paramsPath string) (*Node) {
 	go h.handleVerificationRequests()
 	go h.listenForStreamingTime()
 
+	//If node is a client, find a host
+	if !isHost {
+		h.findHostForClient(h.publicAddrClient)
+	}
 	return h
 }
