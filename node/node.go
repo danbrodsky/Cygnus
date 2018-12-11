@@ -128,7 +128,7 @@ func (h *Node) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
 	client, ok := h.peers[hb.Sender]
 	if ok {
 		var reply int
-		client.Go("Host.ReceiveACK", ack, &reply, nil)
+		client.Go("Node.ReceiveACK", ack, &reply, nil)
 	}
 	return nil
 }
@@ -309,7 +309,7 @@ func (h *Node) notifyPeers() {
 		var reply int
 		client, ok := h.peers[peer]
 		if ok {
-			client.Go("Host.RpcAddPeer", h.publicAddrRPC, reply, nil)
+			client.Go("Node.RpcAddPeer", h.publicAddrRPC, reply, nil)
 		}
 	}
 }
@@ -338,7 +338,7 @@ func (h *Node) floodPairAck(pairAck PairAck) {
 
 	for _, client := range h.peers {
 		var reply int
-		client.Go("Host.ReceivePairAck", pairAck, reply, nil)
+		client.Go("Node.ReceivePairAck", pairAck, reply, nil)
 	}
 }
 
@@ -352,7 +352,7 @@ func (h *Node) floodHostRequest(sender string, hostRequest HostRequest) {
 			hostRequestWithSender := HostRequestWithSender{
 				Sender: h.publicAddrRPC,
 				Request: hostRequest}
-			client.Go("Host.ReceiveHostRequest", hostRequestWithSender, reply, nil)
+			client.Go("Node.ReceiveHostRequest", hostRequestWithSender, reply, nil)
 		}
 	}
 }
@@ -364,7 +364,7 @@ func (h *Node) floodHostClientPair(pair HostClientPair) {
 
 	for _, client := range h.peers {
 		var reply int
-		client.Go("Host.ReceivePair", pair, reply, nil)
+		client.Go("Node.ReceivePair", pair, reply, nil)
 	}
 }
 
@@ -650,7 +650,7 @@ func (h *Node) monitorNode(peer string) {
 			hb := &HeartBeat{SeqNum: seqNum, Sender: h.publicAddrRPC}
 
 			//log.Println(h.publicAddrRPC + " Sending Heartbeat to " + peer + " Seq num: " + strconv.Itoa(int(hb.SeqNum)))
-			client.Go("Host.ReceiveHeartBeat", hb, &reply, nil)
+			client.Go("Node.ReceiveHeartBeat", hb, &reply, nil)
 			time.Sleep(1 * time.Second)
 
 			h.failureDetectorLock.Lock()
