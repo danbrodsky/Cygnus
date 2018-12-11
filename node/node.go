@@ -37,6 +37,7 @@ type Node struct {
 	publicAddrUDP  string
 
 	//Used to connect to client
+	privateAddrClient  string
 	publicAddrClient  string
 
 	//Used to receive consensus connection
@@ -242,7 +243,7 @@ func (h *Node) ReceivePair(pair HostClientPair, reply *int) error {
 				// Begin streaming and accepting client input
 				go h.ListenForHostErrors()
 
-				h.HostStream.ConnectToClient(pair.Client, pair.Host)
+				h.HostStream.ConnectToClient(pair.Client, h.privateAddrClient)
 
 				//Will send an ack indicating that the pairing was accepted
 				pairAck = PairAck{
@@ -844,6 +845,7 @@ func Initialize(paramsPath string, isHost bool) (*Node) {
 	h.publicAddrRPC = concatIp(params.HostPublicIP, params.HostsPortRPC)
 	h.privateAddrUDP = concatIp(params.HostPrivateIP, params.HostsPortUDP)
 	h.publicAddrUDP = concatIp(params.HostPublicIP, params.HostsPortUDP)
+	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
 
 	h.privateVerificationPortIp = concatIp(params.HostPrivateIP, params.VerificationPortUDP)
