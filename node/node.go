@@ -264,10 +264,16 @@ func (h *Node) ListenForHostErrors() {
 func (h *Node) listenForStreamingTime() {
 	for streamTime := range h.HostStream.logStreamTime {
 		h.ledgerLock.Lock()
-		entry := LedgerEntry{HostId: h.nodeID, ClientId: streamTime.ClientId, StartTime: streamTime.StartTime, EndTime: streamTime.EndTime}
+		entry := LedgerEntry{
+			HostId: h.nodeID,
+			ClientId: streamTime.ClientId,
+			StartTime: streamTime.StartTime.Truncate(0).Round(time.Second),
+			EndTime: streamTime.EndTime.Truncate(0).Round(time.Second),
+		}
 
 		_, ok := h.seenLedgerEntries[entry]
 		if !ok {
+
 			h.ledgerEntries = append(h.ledgerEntries, entry)
 			h.seenLedgerEntries[entry] = true
 			h.ledgerLock.Unlock()

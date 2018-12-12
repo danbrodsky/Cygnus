@@ -39,7 +39,10 @@ func main(){
 			n.FindHostForClient(n.PublicIp + ":1337")
 		} else if text == "view ledger\n" {
 			fmt.Println("Printing Ledger")
-			fmt.Println(n.GetLedger())
+			ledger := n.GetLedger()
+			for _, entry := range ledger {
+				fmt.Println(entry)
+			}
 		}
 	}
 }
