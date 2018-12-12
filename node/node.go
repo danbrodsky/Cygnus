@@ -105,6 +105,7 @@ type NodeInterface interface {
 	ReceiveHostRequest(args HostRequestWithSender, reply *int) error
 	setUpMessageRPC()
 	notifyPeers()
+	GetLedger() []LedgerEntry
 	addPeer(ip string)
 	floodLedger(client *rpc.Client)
 	floodPairAck(pairAck PairAck)

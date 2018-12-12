@@ -30,14 +30,16 @@ func main(){
 		fmt.Println("Invalid input: expected go run startNode.go {node #}, exiting")
 		os.Exit(0)
 	}
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Node connected, type 'find host' to find a host for this node: ")
-	text, _ := reader.ReadString('\n')
-	if text == "find host\n" {
-		fmt.Println("host search initialized")
-		n.FindHostForClient(n.PublicIp + ":1337")
-	} else {
-		fmt.Println("Invalid input, exiting")
-		os.Exit(0)
+	for {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Type 'find host' to find a host or 'view ledger' to view the ledger: ")
+		text, _ := reader.ReadString('\n')
+		if text == "find host\n" {
+			fmt.Println("host search initialized")
+			n.FindHostForClient(n.PublicIp + ":1337")
+		} else if text == "view ledger\n" {
+			fmt.Println("Printing Ledger")
+			fmt.Println(n.GetLedger())
+		}
 	}
 }
