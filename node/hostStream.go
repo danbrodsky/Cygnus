@@ -14,7 +14,7 @@ import (
 )
 
 //TODO: made short for testing. Increases later for demo
-const LedgerInterval = time.Second * 5
+const LedgerInterval = time.Minute * 5
 
 type HostStream struct {
 	ClientIpPort        string        // IP:port of client host is streaming to
