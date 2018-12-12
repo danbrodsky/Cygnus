@@ -135,7 +135,6 @@ func (hs *HostStream) SendStreamToClient() {
 func (hs *HostStream) ConnectToClient(clientIpPort string, hostInputIpPort string) {
 	hs.stopSendingToClient = make(chan bool, 2)
 	hs.hostErrorReceived = make(chan string, 2)
-	hs.logStreamTime = make(chan LedgerEntry)
 
 	hs.ClientIpPort = clientIpPort
 	hs.HostInputIpPort = hostInputIpPort

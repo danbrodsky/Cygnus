@@ -167,6 +167,7 @@ func (h *Node) ReceiveLedgerEntry(ledgerEntry LedgerEntry, reply *int) error {
 
 	_, ok := h.seenLedgerEntries[ledgerEntry]
 	if !ok {
+		h.seenLedgerEntries[ledgerEntry] = true
 		h.ledgerEntries = append(h.ledgerEntries, ledgerEntry)
 		h.floodLedgerEntry(ledgerEntry)
 	}
@@ -261,13 +262,16 @@ func (h *Node) ListenForHostErrors() {
 }
 
 func (h *Node) listenForStreamingTime() {
-	select {
-	case streamTime := <- h.HostStream.logStreamTime:
+	for streamTime := range h.HostStream.logStreamTime {
 		h.ledgerLock.Lock()
 		entry := LedgerEntry{HostId: h.nodeID, ClientId: streamTime.ClientId, StartTime: streamTime.StartTime, EndTime: streamTime.EndTime}
-		h.ledgerEntries = append(h.ledgerEntries, entry)
-		h.seenLedgerEntries[entry] = true
-		h.ledgerLock.Unlock()
+
+		_, ok := h.seenLedgerEntries[entry]
+		if !ok {
+			h.ledgerEntries = append(h.ledgerEntries, entry)
+			h.seenLedgerEntries[entry] = true
+			h.ledgerLock.Unlock()
+		}
 
 		h.floodLedgerEntry(entry)
 	}
@@ -865,6 +869,8 @@ func Initialize(paramsPath string) (*Node) {
 	//initialize the client streaming service
 	h.ClientStream = &ClientStream{}
 	h.clientConnected = !params.Available
+
+	h.HostStream.logStreamTime = make(chan LedgerEntry)
 	h.ledgerEntries = make([]LedgerEntry,0)
 	h.seenLedgerEntries = make(map[LedgerEntry] bool)
 	h.ledgerLock = sync.Mutex{}
