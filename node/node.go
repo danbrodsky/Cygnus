@@ -111,7 +111,7 @@ type NodeInterface interface {
 	floodHostRequest(sender string, hostRequest HostRequest)
 	floodHostClientPair(pair HostClientPair)
 	sendHostClientPair(clientAddr string, hostAddr string) bool
-	findHostForClient(clientAddr string)
+	FindHostForClient(clientAddr string)
 	monitorNode(peer string)
 	waitForBestHost(addr string, clientAddr string, seqNum uint64) (map[string] string, string, string)
 	ListenForHostErrors()
@@ -573,7 +573,7 @@ func getConnection(ip string) (conn *net.UDPConn, err error) {
 	return l, nil
 }
 
-func (h *Node) findHostForClient(clientAddr string) {
+func (h *Node) FindHostForClient(clientAddr string) {
 	fmt.Println("finding new host")
 	h.seqNumberLockHR.Lock()
 	seqNum := h.currSeqNumberHR
@@ -628,7 +628,7 @@ func (h *Node) ListenForClientErrors(clientAddr string) {
 	case err := <-h.ClientStream.clientErrorReceived:
 		fmt.Println(err)
 		time.Sleep(10 * time.Second)
-		h.findHostForClient(clientAddr)
+		h.FindHostForClient(clientAddr)
 		// TODO: reset client state back to available
 	}
 }
