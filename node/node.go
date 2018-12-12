@@ -90,7 +90,9 @@ type Node struct {
 	//Client stream for sending and receiving data to/from host
 	ClientStream *ClientStream
 
-	Ledger *Ledger
+	ledgerEntries []LedgerEntry
+	ledgerLock sync.Mutex
+	seenLedgerEntries map[LedgerEntry] bool
 }
 
 type NodeInterface interface {
@@ -121,36 +123,6 @@ type NodeInterface interface {
 var(
 	GovecOptions = govec.GetDefaultLogOptions()
 )
-
-type Ledger struct {
-	LedgerEntries []LedgerEntry
-	seenLedgerEntries map[LedgerEntry] bool
-	ledgerLock sync.Mutex
-}
-
-func (l *Ledger) ReadLedger(args int, reply *[]LedgerEntry) error {
-	l.ledgerLock.Lock()
-	*reply = l.LedgerEntries
-	l.ledgerLock.Unlock()
-	return nil
-}
-
-func (l *Ledger) setUpLedgerRPC(addr string) {
-	handler := rpc.NewServer()
-	handler.Register(l)
-	listener, e := net.Listen("tcp", addr)
-	if e != nil {
-		log.Fatal("listen error:", e)
-	}
-	go func() {
-		for {
-			con, e := listener.Accept()
-			if e == nil {
-				go handler.ServeConn(con)
-			}
-		}
-	}()
-}
 
 //Receive a heart beat from another host
 func (h *Node) ReceiveHeartBeat(hb *HeartBeat, reply *int) error {
@@ -189,12 +161,12 @@ func (h *Node) RpcAddPeer(ip string, reply *int) error {
 
 //Receive an acknowledgement for a client-host pairing
 func (h *Node) ReceiveLedgerEntry(ledgerEntry LedgerEntry, reply *int) error {
-	h.Ledger.ledgerLock.Lock()
-	defer h.Ledger.ledgerLock.Unlock()
+	h.ledgerLock.Lock()
+	defer h.ledgerLock.Unlock()
 
-	_, ok := h.Ledger.seenLedgerEntries[ledgerEntry]
+	_, ok := h.seenLedgerEntries[ledgerEntry]
 	if !ok {
-		h.Ledger.LedgerEntries = append(h.Ledger.LedgerEntries, ledgerEntry)
+		h.ledgerEntries = append(h.ledgerEntries, ledgerEntry)
 		h.floodLedgerEntry(ledgerEntry)
 	}
 	return nil
@@ -290,11 +262,11 @@ func (h *Node) ListenForHostErrors() {
 func (h *Node) listenForStreamingTime() {
 	select {
 	case streamTime := <- h.HostStream.logStreamTime:
-		h.Ledger.ledgerLock.Lock()
+		h.ledgerLock.Lock()
 		entry := LedgerEntry{HostId: h.nodeID, ClientId: streamTime.ClientId, StartTime: streamTime.StartTime, EndTime: streamTime.EndTime}
-		h.Ledger.LedgerEntries = append(h.Ledger.LedgerEntries, entry)
-		h.Ledger.seenLedgerEntries[entry] = true
-		h.Ledger.ledgerLock.Unlock()
+		h.ledgerEntries = append(h.ledgerEntries, entry)
+		h.seenLedgerEntries[entry] = true
+		h.ledgerLock.Unlock()
 
 		h.floodLedgerEntry(entry)
 	}
@@ -386,6 +358,13 @@ func (h *Node) notifyPeers() {
 	}
 }
 
+//Notify peers that this host has joined
+func (h *Node) GetLedger() []LedgerEntry {
+	h.ledgerLock.Lock()
+	defer h.ledgerLock.Unlock()
+	return h.ledgerEntries
+}
+
 //Add a peer to the peers list
 func (h *Node) addPeer(ip string) {
 	h.peerLock.Lock()
@@ -405,9 +384,9 @@ func (h *Node) addPeer(ip string) {
 }
 
 func (h *Node) floodLedger(client *rpc.Client) {
-	h.Ledger.ledgerLock.Lock()
-	entries := h.Ledger.LedgerEntries
-	h.Ledger.ledgerLock.Unlock()
+	h.ledgerLock.Lock()
+	entries := h.ledgerEntries
+	h.ledgerLock.Unlock()
 
 	for _, entry := range entries {
 		var reply int
@@ -883,12 +862,9 @@ func Initialize(paramsPath string, isHost bool) (*Node) {
 	//initialize the client streaming service
 	h.ClientStream = &ClientStream{}
 	h.clientConnected = !isHost
-	h.Ledger = &Ledger{
-		LedgerEntries: make([]LedgerEntry,0),
-		seenLedgerEntries: make(map[LedgerEntry] bool),
-		ledgerLock: sync.Mutex{},
-	}
-	h.Ledger.setUpLedgerRPC(concatIp(params.HostPrivateIP, params.LedgerPort))
+	h.ledgerEntries = make([]LedgerEntry,0)
+	h.seenLedgerEntries = make(map[LedgerEntry] bool)
+	h.ledgerLock = sync.Mutex{}
 
 	for _, peer := range params.PeerHosts {
 		h.addPeer(peer)
