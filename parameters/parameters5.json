@@ -1,8 +1,8 @@
 {
   "NodeID" : "Client1",
-  "PeerHosts" : ["127.0.0.1:8001"],
-  "HostPublicIP" : "127.0.0.1",
-  "HostPrivateIP" : "127.0.0.1",
+  "PeerHosts" : ["104.42.177.227:8001"],
+  "HostPublicIP" : "104.42.149.84",
+  "HostPrivateIP" : "10.0.0.4",
   "AcceptClientsPort": "9000",
   "HostsPortRPC": "9001",
   "HostsPortUDP": "9002",
