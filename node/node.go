@@ -26,7 +26,7 @@ type Node struct {
 	nodeID string
 
 	// public ip of node
-	publicIp string
+	PublicIp string
 
 	//For other hosts to connect using RPC
 	privateAddrRPC string
@@ -763,6 +763,8 @@ func Initialize(paramsPath string) (*Node) {
 	h.privateAddrUDP = concatIp(params.HostPrivateIP, params.HostsPortUDP)
 	h.publicAddrUDP = concatIp(params.HostPublicIP, params.HostsPortUDP)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
+
+	h.PublicIp = params.HostPublicIP
 
 	h.privateVerificationPortIp = concatIp(params.HostPrivateIP, params.VerificationPortUDP)
 	h.publicVerificationPortIp = concatIp(params.HostPublicIP, params.VerificationPortUDP)
