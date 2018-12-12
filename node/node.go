@@ -36,9 +36,11 @@ type Node struct {
 	privateAddrUDP string
 	publicAddrUDP  string
 
-	//Used to connect to client
-	privateAddrClient  string
+	//Actual IP used to receive input from client
 	publicAddrClient  string
+
+	//local IP used to receive input from client
+	privateAddrClient string
 
 	//Used to receive consensus connection
 	publicVerificationPortIp string
@@ -837,6 +839,7 @@ func Initialize(paramsPath string) (*Node) {
 	h.publicAddrUDP = concatIp(params.HostPublicIP, params.HostsPortUDP)
 	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 	h.publicAddrClient = concatIp(params.HostPublicIP, params.AcceptClientsPort)
+	h.privateAddrClient = concatIp(params.HostPrivateIP, params.AcceptClientsPort)
 
 	h.PublicIp = params.HostPublicIP
 
