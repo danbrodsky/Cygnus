@@ -51,6 +51,8 @@ func (cs *ClientStream) SendInputToHost() {
 type InputEvent struct {
 	Type    int
 	Keycode int
+	X       int
+	Y       int
 }
 
 func (cs *ClientStream) grabInput(c chan InputEvent) {
@@ -78,10 +80,16 @@ func (cs *ClientStream) grabInput(c chan InputEvent) {
 			if current != nil {
 				c <- *current
 			}
-			current = &InputEvent{}
-			current.Type, _ = strconv.Atoi(fields[2])
+            event_type, _ := strconv.Atoi(fields[2])
+            // enter and leave events are useless and interfere for some reason
+            if event_type != 7 && event_type != 8 {
+                current = &InputEvent{Type: event_type}
+            } else {
+                current = nil
+            }
 			//println("event starts", m)
 		} else {
+			//println("event continues", m)
 			if current == nil {
 				// haven't seen an event yet so skip ahead until first EVENT
 				continue
@@ -96,8 +104,32 @@ func (cs *ClientStream) grabInput(c chan InputEvent) {
 			}
 			if fields[0] == "detail:" {
 				current.Keycode, _ = strconv.Atoi(fields[1])
+				continue
 			}
-			//println("event continues", m)
+			// only care about valuators for mouse motion events
+            if current.Type == 6 && fields[0] == "valuators:" {
+                scanner.Scan()
+                xfields := strings.Fields(scanner.Text())
+                if len(xfields) < 2 {
+                    continue // can't parse this event
+                }
+                x, err := strconv.ParseFloat(xfields[1], 64)
+                if err != nil {
+                    continue
+                }
+                current.X = int(x)
+                scanner.Scan()
+                yfields := strings.Fields(scanner.Text())
+                if len(yfields) < 2 {
+                    continue // can't parse this event
+                }
+                y, err := strconv.ParseFloat(yfields[1], 64)
+                if err != nil {
+                    continue
+                }
+                current.Y = int(y)
+                continue
+            }
 
 		}
 	}

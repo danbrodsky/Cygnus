@@ -71,6 +71,13 @@ func (hs *HostStream) ReceiveInputFromClient() {
                         verb = "keydown"
                     case 3:
                         verb = "keyup"
+                    case 6:
+                        verb = ""
+                        exec.Command("xdotool", "mousemove", string(ie.X), string(ie.Y)).Start()
+                    case 15:
+                        verb = "mousedown"
+                    case 16:
+                        verb = "mouseup"
                     default:
                         verb = ""
                     }
