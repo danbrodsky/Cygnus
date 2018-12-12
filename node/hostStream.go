@@ -63,8 +63,9 @@ func (hs *HostStream) ReceiveInputFromClient() {
 					err := json.Unmarshal([]byte(line), &ie)
 					if err != nil {
 						fmt.Println("error decoding", line, err)
+						continue
 					}
-					fmt.Printf("Received event: %+v\n", ie)
+					//fmt.Printf("Received event: %+v\n", ie)
                     var verb string
                     switch ie.Type {
                     case 2:
@@ -73,7 +74,10 @@ func (hs *HostStream) ReceiveInputFromClient() {
                         verb = "keyup"
                     case 6:
                         verb = ""
-                        exec.Command("xdotool", "mousemove", string(ie.X), string(ie.Y)).Start()
+                        if ie.X != 0 && ie.Y != 0 {
+							fmt.Println(strconv.Itoa(ie.X), strconv.Itoa(ie.Y))
+							exec.Command("xdotool", "mousemove", strconv.Itoa(ie.X), strconv.Itoa(ie.Y)).Start()
+						}
                     case 15:
                         verb = "mousedown"
                     case 16:
