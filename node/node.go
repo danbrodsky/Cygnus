@@ -493,7 +493,7 @@ func (h *Node) askForAgreement(hostId string,respondedHosts map[string]string) b
 	go waitForDecisions(respondedHosts, conn, decisionChan)
 
 	for _, v := range respondedHosts {
-		vm := VerificationMesssage{HostId: hostId, ReturnIp: h.publicVerificationPortIp}
+		vm := VerificationMesssage{HostId: hostId, ReturnIp: conn.LocalAddr().String()}
 		h.proposeAcceptence(v, vm)
 	}
 	return <-decisionChan
