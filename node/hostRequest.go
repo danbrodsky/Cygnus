@@ -76,7 +76,7 @@ type Parameters struct {
         VerificationPortUDP      	string   	`json:"VerificationPortUDP"`
         VerificationReturnPortUDP	string		`json:"VerificationReturnPortUDP"`
         BlackList         			[]string  	`json:"BlackList"`
-		LedgerPort					string		`json:"LedgerPort"`
+		Available					bool		`json:"Available"`
 }
 
 func marshallHostResponse(hb HostResponse) ([]byte, error) {

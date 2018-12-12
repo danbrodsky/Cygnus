@@ -805,7 +805,7 @@ func (h *Node) respondDecision(vm VerificationMesssage){
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-func Initialize(paramsPath string, isHost bool) (*Node) {
+func Initialize(paramsPath string) (*Node) {
 	var params Parameters
 	jsonFile, err := os.Open(paramsPath)
 	if err != nil {
@@ -863,7 +863,7 @@ func Initialize(paramsPath string, isHost bool) (*Node) {
 
 	//initialize the client streaming service
 	h.ClientStream = &ClientStream{}
-	h.clientConnected = !isHost
+	h.clientConnected = !params.Available
 	h.ledgerEntries = make([]LedgerEntry,0)
 	h.seenLedgerEntries = make(map[LedgerEntry] bool)
 	h.ledgerLock = sync.Mutex{}
@@ -875,10 +875,5 @@ func Initialize(paramsPath string, isHost bool) (*Node) {
 	h.notifyPeers()
 	go h.handleVerificationRequests()
 	go h.listenForStreamingTime()
-
-	//If node is a client, find a host
-	if !isHost {
-		h.findHostForClient(h.publicAddrClient)
-	}
 	return h
 }

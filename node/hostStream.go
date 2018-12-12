@@ -13,6 +13,9 @@ import (
 	"time"
 )
 
+//TODO: made short for testing. Increases later for demo
+const LedgerInterval = time.Second * 5
+
 type HostStream struct {
 	ClientIpPort        string        // IP:port of client host is streaming to
 	HostInputIpPort     string        // IP:port of the server on the host that accepts input
@@ -58,8 +61,8 @@ func (hs *HostStream) ReceiveInputFromClient() {
 				hs.logStreamTime <- entry
 				return
 			default:
-				//Log time every five minutes
-				if time.Now().After(startTime.Add(time.Minute * 5)) {
+				//Log time after a certain interval
+				if time.Now().After(startTime.Add(LedgerInterval)) {
 					endTime := time.Now()
 					entry := LedgerEntry{ClientId: hs.ClientIpPort, StartTime: startTime, EndTime: endTime}
 					startTime = endTime
