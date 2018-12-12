@@ -32,8 +32,8 @@ var (
 func main() {
 	ClientIpPort = "127.0.0.1:1234"
 	HostInputIpPort = "127.0.0.1:1235"
-	Resolution = "1920x1080"
-	Display = ":0"
+	Resolution = "1280x800"
+	Display = ":1"
 	Framerate = "60"
 	SdpFileName = "StreamConfig.sdp"
 
@@ -95,6 +95,13 @@ func ReceiveInputFromClient() {
                         verb = "keydown"
                     case 3:
                         verb = "keyup"
+                    case 6:
+                        verb = ""
+                        exec.Command("xdotool", "mousemove", string(ie.X), string(ie.Y)).Start()
+                    case 15:
+                        verb = "mousedown"
+                    case 16:
+                        verb = "mouseup"
                     default:
                         verb = ""
                     }
@@ -130,15 +137,20 @@ func SendInputToHost() {
 	c := make(chan InputEvent)
 	go GrabInput(c)
 	for ie := range c {
-		b, _ := json.Marshal(&ie)
-		conn.Write(b)
-		conn.Write([]byte("\n"))
+		b, err := json.Marshal(&ie)
+        if err != nil {
+            fmt.Printf("# ERROR MARSHALING # %+v\n", ie)
+            println(err.Error())
+        }
+		conn.Write([]byte(string(b) + "\n"))
 	}
 }
 
 type InputEvent struct {
 	Type    int
 	Keycode int
+    X int
+    Y int
 }
 
 func GrabInput(c chan InputEvent) {
@@ -166,16 +178,24 @@ func GrabInput(c chan InputEvent) {
 		if len(fields) > 0 && fields[0] == "EVENT" {
 			// new event starts => send old and reset
 			if current != nil {
-				c <- *current
+                sendcopy := *current
+                fmt.Printf("*** SENDING %+v\n", sendcopy)
+				c <- sendcopy
 			}
-			current = &InputEvent{}
-			current.Type, _ = strconv.Atoi(fields[2])
-			//println("event starts", m)
+            event_type, _ := strconv.Atoi(fields[2])
+            // enter and leave events are useless and interfere for some reason
+            if event_type != 7 && event_type != 8 {
+                current = &InputEvent{Type: event_type}
+            } else {
+                current = nil
+            }
+			//println("event type", current.Type, "starts", m)
 		} else {
 			if current == nil {
 				// haven't seen an event yet so skip ahead until first EVENT
 				continue
 			}
+            //println("event continues", m)
 			if m == "" {
 				// blank line => send what we have
 				if current != nil {
@@ -186,8 +206,32 @@ func GrabInput(c chan InputEvent) {
 			}
 			if fields[0] == "detail:" {
 				current.Keycode, _ = strconv.Atoi(fields[1])
+                continue
 			}
-			//println("event continues", m)
+            // only care about valuators for mouse motion events
+            if current.Type == 6 && fields[0] == "valuators:" {
+                scanner.Scan()
+                xfields := strings.Fields(scanner.Text())
+                if len(xfields) < 2 {
+                    continue // can't parse this event
+                }
+                x, err := strconv.ParseFloat(xfields[1], 64)
+                if err != nil {
+                    continue
+                }
+                current.X = int(x)
+                scanner.Scan()
+                yfields := strings.Fields(scanner.Text())
+                if len(yfields) < 2 {
+                    continue // can't parse this event
+                }
+                y, err := strconv.ParseFloat(yfields[1], 64)
+                if err != nil {
+                    continue
+                }
+                current.Y = int(y)
+                continue
+            }
 
 		}
 	}
