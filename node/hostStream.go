@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"context"
     "encoding/json"
-    "strconv"
+	"os"
+	"strconv"
 	"fmt"
 	"log"
 	"net"
@@ -115,7 +116,7 @@ func (hs *HostStream) ConnectToClient(clientIpPort string, hostInputIpPort strin
 	hs.ClientIpPort = clientIpPort
 	hs.HostInputIpPort = hostInputIpPort
 	hs.Resolution = "1920x1080"
-	hs.Display = ":0"
+	hs.Display = os.Getenv("DISPLAY")
 	hs.Framerate = "60"
 
 	hs.StreamToleranceTime = 5 * time.Second
